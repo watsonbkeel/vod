@@ -1,0 +1,230 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  active
+  disabled
+}
+
+enum CourseStatus {
+  draft
+  published
+  archived
+}
+
+enum LessonStatus {
+  draft
+  published
+  hidden
+}
+
+enum MediaStatus {
+  pending
+  uploaded
+  failed
+}
+
+enum OrderStatus {
+  pending
+  paid
+  closed
+  refunded
+}
+
+enum PaymentChannel {
+  wechat
+  alipay
+}
+
+enum EntitlementSource {
+  purchase
+  gift
+  admin
+}
+
+enum EntitlementStatus {
+  active
+  expired
+  revoked
+}
+
+enum AdminRole {
+  owner
+  operator
+}
+
+model User {
+  id           String              @id @default(cuid())
+  phone        String              @unique
+  status       UserStatus          @default(active)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  orders       Order[]
+  entitlements CourseEntitlement[]
+  progress     LessonProgress[]
+  smsCodes     SmsCode[]
+
+  @@index([status])
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  passwordHash String
+  role         AdminRole @default(owner)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model SmsCode {
+  id        String    @id @default(cuid())
+  phone     String
+  codeHash  String
+  purpose   String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id])
+
+  @@index([phone, purpose, createdAt])
+}
+
+model SiteContent {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  title     String
+  content   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Course {
+  id              String              @id @default(cuid())
+  title           String
+  slug            String              @unique
+  coverUrl        String?
+  summary         String
+  description     String
+  priceCents      Int
+  validityDays    Int                 @default(365)
+  status          CourseStatus        @default(draft)
+  sortOrder       Int                 @default(0)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  lessons         Lesson[]
+  orders          Order[]
+  entitlements    CourseEntitlement[]
+  lessonProgress  LessonProgress[]
+
+  @@index([status, sortOrder])
+}
+
+model Lesson {
+  id             String           @id @default(cuid())
+  courseId       String
+  course         Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  mediaAssetId   String?
+  mediaAsset     MediaAsset?      @relation(fields: [mediaAssetId], references: [id])
+  title          String
+  summary        String?
+  sortOrder      Int              @default(0)
+  status         LessonStatus     @default(draft)
+  durationSec    Int?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  lessonProgress LessonProgress[]
+
+  @@index([courseId, sortOrder])
+  @@index([status])
+}
+
+model MediaAsset {
+  id          String      @id @default(cuid())
+  bucket      String
+  region      String
+  objectKey   String      @unique
+  filename    String
+  mimeType    String
+  sizeBytes   BigInt
+  durationSec Int?
+  status      MediaStatus @default(pending)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  lessons     Lesson[]
+}
+
+model Order {
+  id                  String         @id @default(cuid())
+  userId              String
+  user                User           @relation(fields: [userId], references: [id])
+  courseId            String
+  course              Course         @relation(fields: [courseId], references: [id])
+  merchantOrderNo     String         @unique
+  thirdPartyOrderNo   String?
+  channel             PaymentChannel
+  status              OrderStatus    @default(pending)
+  amountCents         Int
+  paidAt              DateTime?
+  closedAt            DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@index([userId, status])
+  @@index([courseId])
+  @@index([status, createdAt])
+}
+
+model PaymentCallbackLog {
+  id              String   @id @default(cuid())
+  merchantOrderNo String?
+  channel         String?
+  rawPayload      Json
+  signatureValid  Boolean
+  processed       Boolean  @default(false)
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+
+  @@index([merchantOrderNo])
+}
+
+model CourseEntitlement {
+  id        String            @id @default(cuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id])
+  courseId  String
+  course    Course            @relation(fields: [courseId], references: [id])
+  source    EntitlementSource
+  status    EntitlementStatus @default(active)
+  startsAt  DateTime          @default(now())
+  expiresAt DateTime
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([userId, status, expiresAt])
+  @@index([courseId])
+}
+
+model LessonProgress {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  courseId      String
+  course        Course   @relation(fields: [courseId], references: [id])
+  lessonId      String
+  lesson        Lesson   @relation(fields: [lessonId], references: [id])
+  positionSec   Int      @default(0)
+  completed     Boolean  @default(false)
+  lastWatchedAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, lessonId])
+  @@index([courseId])
+}
