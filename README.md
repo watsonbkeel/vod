@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VOD Course Platform
 
-## Getting Started
+A self-hosted MVP for selling recorded video courses: personal brand pages, paid course access, private COS video playback, and an admin backend.
 
-First, run the development server:
+## Stack
+
+- Next.js 16 + TypeScript + Tailwind CSS
+- PostgreSQL + Prisma
+- Redis for SMS/session-adjacent short-lived state
+- Tencent Cloud COS for private MP4 storage
+- Tencent Cloud SMS for phone verification
+- Weifutong for WeChat/Alipay payments
+
+## Local setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Copy environment variables:
+
+```bash
+cp .env.example .env
+```
+
+3. Start PostgreSQL and Redis.
+
+If Docker is available:
+
+```bash
+docker compose up -d postgres redis
+```
+
+If Docker is not available, install/start PostgreSQL and Redis yourself, then update `DATABASE_URL` and `REDIS_URL` in `.env`.
+
+4. Generate Prisma client and run migrations:
+
+```bash
+npm run db:generate
+npm run db:migrate
+npm run db:seed
+```
+
+5. Start the app:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Useful scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npx prisma validate
+npm run build
+npm run db:studio
+```
 
-## Learn More
+## Current MVP status
 
-To learn more about Next.js, take a look at the following resources:
+Implemented:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Public home, about, course list, and course detail pages
+- Student course and learning page shell
+- Admin dashboard/course/order/user/content shells
+- Prisma schema for users, admins, courses, lessons, media, orders, entitlements, callbacks, and progress
+- Database-backed course list/detail query helpers
+- API placeholders for SMS login, courses, COS upload token, playback URL, orders, Weifutong callback, progress, and admin grants
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Next:
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Run local PostgreSQL migration/seed once a database is available
+- Implement admin login
+- Replace admin mock views with database CRUD
+- Implement real COS direct upload and playback authorization

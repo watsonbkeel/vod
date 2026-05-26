@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { SiteHeader } from "@/components/site-header";
-import { featuredCourses, lessonOutline } from "@/lib/mock-data";
+import { getPublishedCourseBySlug } from "@/lib/courses";
 
 type CourseDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -9,7 +10,8 @@ type CourseDetailPageProps = {
 
 export default async function CourseDetailPage({ params }: CourseDetailPageProps) {
   const { slug } = await params;
-  const course = featuredCourses.find((item) => item.slug === slug);
+  await connection();
+  const course = await getPublishedCourseBySlug(slug);
 
   if (!course) {
     notFound();
@@ -23,19 +25,19 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
           <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
             <p className="text-sm font-medium text-cyan-700">精品录播课程</p>
             <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">{course.title}</h1>
-            <p className="mt-5 text-lg leading-8 text-slate-600">{course.summary}</p>
+            <p className="mt-5 text-lg leading-8 text-slate-600">{course.description}</p>
           </div>
           <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
             <h2 className="text-2xl font-semibold text-slate-950">课程大纲</h2>
             <div className="mt-6 divide-y divide-slate-100">
-              {lessonOutline.map((lesson, index) => (
-                <div key={lesson} className="flex items-center gap-4 py-4">
+              {course.lessons.map((lesson, index) => (
+                <div key={lesson.id} className="flex items-center gap-4 py-4">
                   <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">
                     {index + 1}
                   </span>
                   <div>
-                    <h3 className="font-medium text-slate-950">{lesson}</h3>
-                    <p className="mt-1 text-sm text-slate-500">付费后在有效期内观看完整视频。</p>
+                    <h3 className="font-medium text-slate-950">{lesson.title}</h3>
+                    <p className="mt-1 text-sm text-slate-500">{lesson.summary ?? "付费后在有效期内观看完整视频。"}</p>
                   </div>
                 </div>
               ))}

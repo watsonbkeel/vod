@@ -1,9 +1,13 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { CourseCard } from "@/components/course-card";
 import { SiteHeader } from "@/components/site-header";
-import { featuredCourses } from "@/lib/mock-data";
+import { getPublishedCourses } from "@/lib/courses";
 
-export default function Home() {
+export default async function Home() {
+  await connection();
+  const courses = await getPublishedCourses();
+  const featuredCourse = courses[0];
   return (
     <main className="min-h-screen bg-slate-50">
       <SiteHeader />
@@ -30,11 +34,13 @@ export default function Home() {
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl">
           <div className="rounded-[1.5rem] bg-gradient-to-br from-slate-950 to-cyan-800 p-8 text-white">
             <p className="text-sm text-cyan-100">主推课程</p>
-            <h2 className="mt-4 text-3xl font-semibold">系统实战训练营</h2>
-            <p className="mt-4 leading-7 text-slate-200">8 个核心课时，一次购买，一年有效。适合希望系统掌握方法并完成实操闭环的学员。</p>
+            <h2 className="mt-4 text-3xl font-semibold">{featuredCourse?.title ?? "系统实战训练营"}</h2>
+            <p className="mt-4 leading-7 text-slate-200">
+              {featuredCourse?.summary ?? "8 个核心课时，一次购买，一年有效。适合希望系统掌握方法并完成实操闭环的学员。"}
+            </p>
             <div className="mt-8 grid grid-cols-3 gap-3 text-center text-sm">
               <div className="rounded-2xl bg-white/10 p-4">
-                <strong className="block text-2xl">8</strong>课时
+                <strong className="block text-2xl">{featuredCourse?.lessonCount ?? 8}</strong>课时
               </div>
               <div className="rounded-2xl bg-white/10 p-4">
                 <strong className="block text-2xl">365</strong>天有效
@@ -57,7 +63,7 @@ export default function Home() {
           </Link>
         </div>
         <div className="grid gap-6 md:grid-cols-2">
-          {featuredCourses.map((course) => (
+          {courses.map((course) => (
             <CourseCard key={course.slug} course={course} />
           ))}
         </div>

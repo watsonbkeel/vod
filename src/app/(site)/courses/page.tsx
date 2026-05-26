@@ -1,8 +1,11 @@
+import { connection } from "next/server";
 import { CourseCard } from "@/components/course-card";
 import { SiteHeader } from "@/components/site-header";
-import { featuredCourses } from "@/lib/mock-data";
+import { getPublishedCourses } from "@/lib/courses";
 
-export default function CoursesPage() {
+export default async function CoursesPage() {
+  await connection();
+  const courses = await getPublishedCourses();
   return (
     <main className="min-h-screen bg-slate-50">
       <SiteHeader />
@@ -15,7 +18,7 @@ export default function CoursesPage() {
           </p>
         </div>
         <div className="mt-10 grid gap-6 md:grid-cols-2">
-          {featuredCourses.map((course) => (
+          {courses.map((course) => (
             <CourseCard key={course.slug} course={course} />
           ))}
         </div>

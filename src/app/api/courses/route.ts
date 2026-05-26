@@ -1,6 +1,8 @@
 import { jsonOk } from "@/lib/api";
-import { featuredCourses } from "@/lib/mock-data";
+import { getPublishedCourses } from "@/lib/courses";
 
 export async function GET() {
-  return jsonOk({ courses: featuredCourses });
+  const courses = await getPublishedCourses();
+
+  return jsonOk({ courses });
 }
