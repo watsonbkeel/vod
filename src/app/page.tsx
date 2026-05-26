@@ -17,10 +17,10 @@ export default async function Home() {
             个人品牌课程 · 系统化付费学习
           </span>
           <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-slate-950 sm:text-6xl">
-            把高价值经验沉淀成可反复学习的视频课程
+            把复杂方法讲清楚，把学习结果真正落到行动里
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-            这里展示你的专业定位、课程体系和代表成果。学员购买后可在有效期内在线观看视频，持续记录学习进度。
+            面向希望系统提升的学员，提供结构化视频课程、课时目录、有效期权益和学习进度记录。你可以先了解课程体系，再进入 H5 学习页持续复盘。
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link href="/courses" className="rounded-full bg-slate-950 px-6 py-3 text-center font-medium text-white hover:bg-slate-800">
@@ -29,6 +29,18 @@ export default async function Home() {
             <Link href="/about" className="rounded-full border border-slate-300 px-6 py-3 text-center font-medium text-slate-700 hover:border-slate-950 hover:text-slate-950">
               了解讲师
             </Link>
+          </div>
+          <div className="mt-10 grid gap-4 sm:grid-cols-3">
+            {[
+              ["系统课程", "从概念、案例到实操路径，按课时推进学习。"],
+              ["有效期权益", "购买或赠课后按课程有效期开放学习入口。"],
+              ["进度记录", "记录观看位置和完成状态，方便后续复盘。"],
+            ].map(([title, desc]) => (
+              <div key={title} className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                <h3 className="font-semibold text-slate-950">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-500">{desc}</p>
+              </div>
+            ))}
           </div>
         </div>
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl">
@@ -50,6 +62,16 @@ export default async function Home() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+      <section className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
+        <div className="grid gap-4 rounded-3xl bg-slate-950 p-6 text-white md:grid-cols-3 md:p-8">
+          <div>
+            <p className="text-sm text-cyan-200">适合谁</p>
+            <h2 className="mt-2 text-2xl font-semibold">想把知识转化为可执行方案的人</h2>
+          </div>
+          <p className="text-sm leading-6 text-slate-300">适合希望按清晰路径学习、练习和复盘的学员，而不是只收藏碎片化资料。</p>
+          <p className="text-sm leading-6 text-slate-300">课程以视频点播为主，后续可扩展作业、调研和学习反馈，形成完整教学闭环。</p>
         </div>
       </section>
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
