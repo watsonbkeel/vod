@@ -1,11 +1,77 @@
-import { jsonOk } from "@/lib/api";
+import { cookies } from "next/headers";
+import { z } from "zod";
+import { jsonError, jsonOk } from "@/lib/api";
+import { verifySession } from "@/lib/auth/session";
+import { prisma } from "@/lib/db";
+
+const progressSchema = z.object({
+  lessonId: z.string().trim().min(1),
+  positionSec: z.coerce.number().int().min(0).default(0),
+  completed: z.boolean().default(false),
+});
+
+async function getUserId() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("vod_session")?.value;
+
+  if (!token) return null;
+
+  try {
+    const session = await verifySession(token);
+    return session.role === "user" ? session.sub : null;
+  } catch {
+    return null;
+  }
+}
 
 export async function POST(request: Request) {
-  const body = await request.json();
+  const userId = await getUserId();
+
+  if (!userId) {
+    return jsonError("请先登录后再记录学习进度", 401);
+  }
+
+  const body = progressSchema.parse(await request.json());
+  const lesson = await prisma.lesson.findUnique({ where: { id: body.lessonId }, select: { courseId: true } });
+
+  if (!lesson) {
+    return jsonError("课时不存在", 404);
+  }
+
+  const entitlement = await prisma.courseEntitlement.findFirst({
+    where: {
+      userId,
+      courseId: lesson.courseId,
+      status: "active",
+      startsAt: { lte: new Date() },
+      expiresAt: { gt: new Date() },
+    },
+  });
+
+  if (!entitlement) {
+    return jsonError("你还没有该课程的有效学习权限", 403);
+  }
+
+  const progress = await prisma.lessonProgress.upsert({
+    where: { userId_lessonId: { userId, lessonId: body.lessonId } },
+    update: {
+      positionSec: body.positionSec,
+      completed: body.completed,
+      lastWatchedAt: new Date(),
+    },
+    create: {
+      userId,
+      courseId: lesson.courseId,
+      lessonId: body.lessonId,
+      positionSec: body.positionSec,
+      completed: body.completed,
+    },
+  });
 
   return jsonOk({
-    lessonId: body.lessonId,
-    positionSec: body.positionSec ?? 0,
-    completed: Boolean(body.completed),
+    lessonId: progress.lessonId,
+    positionSec: progress.positionSec,
+    completed: progress.completed,
+    lastWatchedAt: progress.lastWatchedAt,
   });
 }
