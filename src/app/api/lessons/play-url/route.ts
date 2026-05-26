@@ -1,7 +1,79 @@
+import { cookies } from "next/headers";
+import { z } from "zod";
 import { jsonError, jsonOk } from "@/lib/api";
+import { verifySession } from "@/lib/auth/session";
+import { getCosConfig } from "@/lib/cos/client";
+import { prisma } from "@/lib/db";
 
-export async function POST() {
-  return jsonError("播放鉴权和 COS 短期签名将在课程权益接入后启用", 501);
+const playUrlSchema = z.object({
+  lessonId: z.string().trim().min(1),
+});
+
+async function getUserId() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("vod_session")?.value;
+
+  if (!token) return null;
+
+  try {
+    const session = await verifySession(token);
+    return session.role === "user" ? session.sub : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function POST(request: Request) {
+  const userId = await getUserId();
+
+  if (!userId) {
+    return jsonError("请先登录后再观看课程", 401);
+  }
+
+  const { lessonId } = playUrlSchema.parse(await request.json());
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    include: { course: true, mediaAsset: true },
+  });
+
+  if (!lesson || lesson.status !== "published" || lesson.course.status !== "published") {
+    return jsonError("课时不存在或未上架", 404);
+  }
+
+  const entitlement = await prisma.courseEntitlement.findFirst({
+    where: {
+      userId,
+      courseId: lesson.courseId,
+      status: "active",
+      startsAt: { lte: new Date() },
+      expiresAt: { gt: new Date() },
+    },
+  });
+
+  if (!entitlement) {
+    return jsonError("你还没有该课程的有效观看权限", 403);
+  }
+
+  if (!lesson.mediaAsset || lesson.mediaAsset.status !== "uploaded") {
+    return jsonError("该课时还没有可播放的视频", 404);
+  }
+
+  const expiresIn = Number(process.env.COS_SIGN_EXPIRES_SECONDS ?? 600);
+  const { bucket, region } = getCosConfig();
+  const playUrl = process.env.TENCENT_SECRET_ID && process.env.TENCENT_SECRET_KEY
+    ? `cos://${lesson.mediaAsset.bucket}/${lesson.mediaAsset.objectKey}`
+    : `/api/mock-media/${lesson.mediaAsset.id}?expiresIn=${expiresIn}`;
+
+  return jsonOk({
+    lessonId: lesson.id,
+    courseId: lesson.courseId,
+    assetId: lesson.mediaAsset.id,
+    bucket,
+    region,
+    objectKey: lesson.mediaAsset.objectKey,
+    playUrl,
+    expiresIn,
+  });
 }
 
 export async function GET() {
