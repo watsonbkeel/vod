@@ -17,6 +17,14 @@ const courseFormSchema = z.object({
   status: z.enum(["draft", "published", "archived"]),
 });
 
+const lessonFormSchema = z.object({
+  title: z.string().trim().min(1),
+  summary: z.string().trim().optional(),
+  sortOrder: z.coerce.number().int().default(0),
+  status: z.enum(["draft", "published", "hidden"]),
+  durationSec: z.preprocess((value) => (value === "" ? null : value), z.coerce.number().int().min(0).nullable()),
+});
+
 function parseCourseForm(formData: FormData) {
   const data = courseFormSchema.parse({
     title: formData.get("title"),
@@ -38,6 +46,24 @@ function parseCourseForm(formData: FormData) {
     validityDays: data.validityDays,
     sortOrder: data.sortOrder,
     status: data.status,
+  };
+}
+
+function parseLessonForm(formData: FormData) {
+  const data = lessonFormSchema.parse({
+    title: formData.get("title"),
+    summary: formData.get("summary"),
+    sortOrder: formData.get("sortOrder") || 0,
+    status: formData.get("status"),
+    durationSec: formData.get("durationSec"),
+  });
+
+  return {
+    title: data.title,
+    summary: data.summary || null,
+    sortOrder: data.sortOrder,
+    status: data.status,
+    durationSec: data.durationSec,
   };
 }
 
@@ -74,4 +100,39 @@ export async function deleteCourse(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/courses");
   revalidatePath("/admin/courses");
+}
+
+export async function createLesson(courseId: string, formData: FormData) {
+  await requireAdminSession();
+  const data = parseLessonForm(formData);
+  const course = await prisma.course.findUnique({ where: { id: courseId }, select: { slug: true } });
+
+  if (!course) return;
+
+  await prisma.lesson.create({ data: { ...data, courseId } });
+  revalidatePath(`/courses/${course.slug}`);
+  revalidatePath(`/admin/courses/${courseId}/edit`);
+}
+
+export async function updateLesson(courseId: string, lessonId: string, formData: FormData) {
+  await requireAdminSession();
+  const data = parseLessonForm(formData);
+  const course = await prisma.course.findUnique({ where: { id: courseId }, select: { slug: true } });
+
+  if (!course) return;
+
+  await prisma.lesson.update({ where: { id: lessonId, courseId }, data });
+  revalidatePath(`/courses/${course.slug}`);
+  revalidatePath(`/admin/courses/${courseId}/edit`);
+}
+
+export async function deleteLesson(courseId: string, lessonId: string) {
+  await requireAdminSession();
+  const course = await prisma.course.findUnique({ where: { id: courseId }, select: { slug: true } });
+
+  if (!course) return;
+
+  await prisma.lesson.delete({ where: { id: lessonId, courseId } });
+  revalidatePath(`/courses/${course.slug}`);
+  revalidatePath(`/admin/courses/${courseId}/edit`);
 }

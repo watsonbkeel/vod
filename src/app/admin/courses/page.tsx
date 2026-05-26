@@ -36,7 +36,7 @@ export default async function AdminCoursesPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Link href={`/admin/courses/${course.id}/edit`} className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:border-slate-950 hover:text-slate-950">
-                      编辑
+                      编辑课程/课时
                     </Link>
                     <form action={deleteCourse}>
                       <input type="hidden" name="courseId" value={course.id} />
