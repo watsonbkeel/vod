@@ -24,9 +24,14 @@ export function AdminShell({ title, children }: { title: string; children: React
       <section className="p-4 md:ml-64 md:p-8">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight text-slate-950">{title}</h2>
-          <Link href="/" className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:border-slate-950 hover:text-slate-950">
-            返回前台
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:border-slate-950 hover:text-slate-950">
+              返回前台
+            </Link>
+            <form action="/api/admin/auth/logout" method="post">
+              <button className="rounded-full bg-slate-950 px-4 py-2 text-sm text-white hover:bg-slate-800">退出</button>
+            </form>
+          </div>
         </div>
         {children}
       </section>
