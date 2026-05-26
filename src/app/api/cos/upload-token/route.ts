@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { jsonOk } from "@/lib/api";
+import { jsonError, jsonOk } from "@/lib/api";
+import { getAdminSession } from "@/lib/auth/admin";
 import { buildObjectKey, getCosConfig } from "@/lib/cos/client";
 import { prisma } from "@/lib/db";
 
@@ -10,6 +11,12 @@ const uploadRequestSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const admin = await getAdminSession();
+
+  if (!admin) {
+    return jsonError("请先登录后台", 401);
+  }
+
   const body = uploadRequestSchema.parse(await request.json().catch(() => ({})));
   const { bucket, region } = getCosConfig();
   const objectKey = buildObjectKey(body.filename);
