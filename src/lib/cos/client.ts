@@ -8,12 +8,8 @@ export function getCosClient() {
 }
 
 export function getCosConfig() {
-  const bucket = process.env.COS_BUCKET;
-  const region = process.env.COS_REGION;
-
-  if (!bucket || !region) {
-    throw new Error("COS_BUCKET and COS_REGION are required");
-  }
+  const bucket = process.env.COS_BUCKET || "dev-vod-bucket";
+  const region = process.env.COS_REGION || "ap-guangzhou";
 
   return { bucket, region };
 }
