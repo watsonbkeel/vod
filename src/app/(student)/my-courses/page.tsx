@@ -1,10 +1,18 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
+import { getUserId } from "@/lib/auth/user";
 import { prisma } from "@/lib/db";
 
 export default async function MyCoursesPage() {
-  const user = await prisma.user.findFirst({
-    orderBy: { createdAt: "desc" },
+  const userId = await getUserId();
+
+  if (!userId) {
+    redirect("/login");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
     include: {
       entitlements: {
         where: {
@@ -24,8 +32,6 @@ export default async function MyCoursesPage() {
     },
   });
 
-  const firstEntitlement = user?.entitlements[0];
-
   return (
     <main className="min-h-screen bg-slate-50">
       <SiteHeader />
@@ -37,16 +43,16 @@ export default async function MyCoursesPage() {
             <div className="rounded-3xl bg-white p-8 text-center text-slate-500 shadow-sm ring-1 ring-slate-200">暂无已开通课程</div>
           ) : (
             user.entitlements.map((entitlement) => {
-              const progressCount = entitlement.course.lessons.length;
+              const lessonCount = entitlement.course.lessons.length;
               return (
                 <div key={entitlement.id} className="flex flex-col justify-between gap-5 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:flex-row md:items-center">
                   <div>
                     <h2 className="text-xl font-semibold text-slate-950">{entitlement.course.title}</h2>
                     <p className="mt-2 text-sm text-slate-500">
-                      有效期至：{entitlement.expiresAt.toLocaleDateString("zh-CN")} · 共 {progressCount} 个已发布课时
+                      有效期至：{entitlement.expiresAt.toLocaleDateString("zh-CN")} · 共 {lessonCount} 个已发布课时
                     </p>
                   </div>
-                  <Link href={firstEntitlement ? `/learn/${firstEntitlement.course.id}` : "/learn/demo-course"} className="rounded-full bg-slate-950 px-5 py-2 text-center text-sm font-medium text-white hover:bg-slate-800">
+                  <Link href={`/learn/${entitlement.course.id}`} className="rounded-full bg-slate-950 px-5 py-2 text-center text-sm font-medium text-white hover:bg-slate-800">
                     继续学习
                   </Link>
                 </div>

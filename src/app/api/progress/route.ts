@@ -1,7 +1,6 @@
-import { cookies } from "next/headers";
 import { z } from "zod";
 import { jsonError, jsonOk } from "@/lib/api";
-import { verifySession } from "@/lib/auth/session";
+import { getUserId } from "@/lib/auth/user";
 import { prisma } from "@/lib/db";
 
 const progressSchema = z.object({
@@ -9,20 +8,6 @@ const progressSchema = z.object({
   positionSec: z.coerce.number().int().min(0).default(0),
   completed: z.boolean().default(false),
 });
-
-async function getUserId() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("vod_session")?.value;
-
-  if (!token) return null;
-
-  try {
-    const session = await verifySession(token);
-    return session.role === "user" ? session.sub : null;
-  } catch {
-    return null;
-  }
-}
 
 export async function POST(request: Request) {
   const userId = await getUserId();
