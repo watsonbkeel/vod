@@ -3,10 +3,14 @@ import { connection } from "next/server";
 import { CourseCard } from "@/components/course-card";
 import { SiteHeader } from "@/components/site-header";
 import { getPublishedCourses } from "@/lib/courses";
+import { prisma } from "@/lib/db";
 
 export default async function Home() {
   await connection();
-  const courses = await getPublishedCourses();
+  const [courses, homeContent] = await Promise.all([
+    getPublishedCourses(),
+    prisma.siteContent.findUnique({ where: { key: "home" } }),
+  ]);
   const featuredCourse = courses[0];
   return (
     <main className="min-h-screen bg-slate-50">
@@ -17,10 +21,10 @@ export default async function Home() {
             个人品牌课程 · 系统化付费学习
           </span>
           <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-slate-950 sm:text-6xl">
-            把复杂方法讲清楚，把学习结果真正落到行动里
+            {homeContent?.title ?? "把复杂方法讲清楚，把学习结果真正落到行动里"}
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-            面向希望系统提升的学员，提供结构化视频课程、课时目录、有效期权益和学习进度记录。你可以先了解课程体系，再进入 H5 学习页持续复盘。
+            {homeContent?.content ?? "面向希望系统提升的学员，提供结构化视频课程、课时目录、有效期权益和学习进度记录。你可以先了解课程体系，再进入 H5 学习页持续复盘。"}
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link href="/courses" className="rounded-full bg-slate-950 px-6 py-3 text-center font-medium text-white hover:bg-slate-800">

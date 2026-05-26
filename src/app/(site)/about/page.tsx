@@ -1,15 +1,19 @@
+import { connection } from "next/server";
 import { SiteHeader } from "@/components/site-header";
+import { prisma } from "@/lib/db";
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  await connection();
+  const aboutContent = await prisma.siteContent.findUnique({ where: { key: "about" } });
   return (
     <main className="min-h-screen bg-slate-50">
       <SiteHeader />
       <section className="mx-auto max-w-5xl px-4 py-14 sm:px-6">
         <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200 sm:p-12">
           <p className="text-sm font-medium text-cyan-700">关于讲师</p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">用真实项目经验设计可落地的训练路径</h1>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">{aboutContent?.title ?? "用真实项目经验设计可落地的训练路径"}</h1>
           <p className="mt-6 text-lg leading-8 text-slate-600">
-            这个个人站用于承载讲师的专业定位、课程体系和学员学习入口。课程强调结构化路径、真实案例和行动复盘，让学员在有效期内反复学习、逐步完成自己的实践闭环。
+            {aboutContent?.content ?? "这个个人站用于承载讲师的专业定位、课程体系和学员学习入口。课程强调结构化路径、真实案例和行动复盘，让学员在有效期内反复学习、逐步完成自己的实践闭环。"}
           </p>
           <div className="mt-10 grid gap-4 md:grid-cols-3">
             {[
