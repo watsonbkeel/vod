@@ -25,6 +25,11 @@ const lessonFormSchema = z.object({
   durationSec: z.preprocess((value) => (value === "" ? null : value), z.coerce.number().int().min(0).nullable()),
 });
 
+const mediaBindingSchema = z.object({
+  lessonId: z.string().trim().min(1),
+  mediaAssetId: z.string().trim().min(1),
+});
+
 function parseCourseForm(formData: FormData) {
   const data = courseFormSchema.parse({
     title: formData.get("title"),
@@ -133,6 +138,28 @@ export async function deleteLesson(courseId: string, lessonId: string) {
   if (!course) return;
 
   await prisma.lesson.delete({ where: { id: lessonId, courseId } });
+  revalidatePath(`/courses/${course.slug}`);
+  revalidatePath(`/admin/courses/${courseId}/edit`);
+}
+
+export async function bindLessonMedia(courseId: string, formData: FormData) {
+  await requireAdminSession();
+  const data = mediaBindingSchema.parse({
+    lessonId: formData.get("lessonId"),
+    mediaAssetId: formData.get("mediaAssetId"),
+  });
+  const course = await prisma.course.findUnique({ where: { id: courseId }, select: { slug: true } });
+
+  if (!course) return;
+
+  const mediaAsset = await prisma.mediaAsset.findUnique({ where: { id: data.mediaAssetId } });
+
+  if (!mediaAsset) return;
+
+  await prisma.lesson.update({
+    where: { id: data.lessonId, courseId },
+    data: { mediaAssetId: data.mediaAssetId },
+  });
   revalidatePath(`/courses/${course.slug}`);
   revalidatePath(`/admin/courses/${courseId}/edit`);
 }
