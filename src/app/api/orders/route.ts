@@ -1,28 +1,13 @@
-import { cookies } from "next/headers";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { jsonError, jsonOk } from "@/lib/api";
-import { verifySession } from "@/lib/auth/session";
+import { getUserId } from "@/lib/auth/user";
 import { prisma } from "@/lib/db";
 
 const orderSchema = z.object({
   courseId: z.string().trim().min(1),
   channel: z.enum(["wechat", "alipay"]).default("wechat"),
 });
-
-async function getUserId() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("vod_session")?.value;
-
-  if (!token) return null;
-
-  try {
-    const session = await verifySession(token);
-    return session.role === "user" ? session.sub : null;
-  } catch {
-    return null;
-  }
-}
 
 export async function POST(request: Request) {
   const userId = await getUserId();

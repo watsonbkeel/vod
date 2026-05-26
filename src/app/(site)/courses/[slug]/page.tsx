@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { PurchaseBox } from "@/components/purchase-box";
 import { SiteHeader } from "@/components/site-header";
 import { getPublishedCourseBySlug } from "@/lib/courses";
 
@@ -64,9 +64,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
               <dd className="font-medium text-slate-950">不支持</dd>
             </div>
           </dl>
-          <Link href="/login" className="mt-6 block rounded-full bg-orange-600 px-6 py-3 text-center font-semibold text-white hover:bg-orange-500">
-            登录并购买
-          </Link>
+          <PurchaseBox courseId={course.id} />
         </aside>
       </section>
     </main>
