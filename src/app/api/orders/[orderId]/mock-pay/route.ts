@@ -1,6 +1,7 @@
 import { jsonError, jsonOk } from "@/lib/api";
 import { getUserId } from "@/lib/auth/user";
 import { prisma } from "@/lib/db";
+import { ensurePurchaseEntitlement } from "@/lib/entitlements";
 
 export async function POST(_request: Request, { params }: { params: Promise<{ orderId: string }> }) {
   const userId = await getUserId();
@@ -40,14 +41,11 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
       },
     });
 
-    await tx.courseEntitlement.create({
-      data: {
-        userId: order.userId,
-        courseId: order.courseId,
-        source: "purchase",
-        startsAt: paidAt,
-        expiresAt,
-      },
+    await ensurePurchaseEntitlement(tx, {
+      userId: order.userId,
+      courseId: order.courseId,
+      startsAt: paidAt,
+      expiresAt,
     });
 
     return updatedOrder;

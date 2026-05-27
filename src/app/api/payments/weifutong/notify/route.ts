@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { ensurePurchaseEntitlement } from "@/lib/entitlements";
 import { verifyWeifutongSignature } from "@/lib/payments/weifutong/sign";
 
 function getPaidAt(payload: Record<string, string>) {
@@ -43,29 +44,26 @@ export async function POST(request: Request) {
     const paidAt = getPaidAt(payload);
     const expiresAt = new Date(paidAt.getTime() + order.course.validityDays * 24 * 60 * 60 * 1000);
 
-    await prisma.$transaction([
-      prisma.order.update({
+    await prisma.$transaction(async (tx) => {
+      await tx.order.update({
         where: { id: order.id },
         data: {
           status: "paid",
           thirdPartyOrderNo: payload.transaction_id || payload.trade_no || payload.thirdPartyOrderNo,
           paidAt,
         },
-      }),
-      prisma.courseEntitlement.create({
-        data: {
-          userId: order.userId,
-          courseId: order.courseId,
-          source: "purchase",
-          startsAt: paidAt,
-          expiresAt,
-        },
-      }),
-      prisma.paymentCallbackLog.updateMany({
+      });
+      await ensurePurchaseEntitlement(tx, {
+        userId: order.userId,
+        courseId: order.courseId,
+        startsAt: paidAt,
+        expiresAt,
+      });
+      await tx.paymentCallbackLog.updateMany({
         where: { merchantOrderNo, signatureValid: true, processed: false },
         data: { processed: true },
-      }),
-    ]);
+      });
+    });
   }
 
   return new Response("success");
