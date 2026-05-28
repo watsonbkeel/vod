@@ -1,10 +1,12 @@
-import { parseWeifutongXml, postWeifutongXml } from "./xml";
+import { parseWeifutongXmlFields, postWeifutongXml } from "./xml";
+import { verifyWeifutongSignature } from "./sign";
 
 export type WeifutongTradeQuery = {
   status: string;
   resultCode: string;
   tradeState: string;
   transactionId: string | null;
+  signatureValid: boolean;
   raw: Record<string, string>;
 };
 
@@ -25,27 +27,14 @@ export async function queryWeifutongOrder(merchantOrderNo: string): Promise<Weif
     nonce_str: crypto.randomUUID().replaceAll("-", ""),
   };
   const text = await postWeifutongXml(payload);
-  const raw = parseWeifutongXml(text, [
-    "status",
-    "message",
-    "result_code",
-    "err_code",
-    "err_msg",
-    "trade_state",
-    "transaction_id",
-    "out_transaction_id",
-    "out_trade_no",
-    "total_fee",
-    "fee_type",
-    "nonce_str",
-    "sign",
-  ]);
+  const raw = parseWeifutongXmlFields(text);
 
   return {
     status: raw.status || "",
     resultCode: raw.result_code || "",
     tradeState: raw.trade_state || "",
     transactionId: raw.transaction_id || raw.out_transaction_id || null,
+    signatureValid: verifyWeifutongSignature(raw),
     raw,
   };
 }

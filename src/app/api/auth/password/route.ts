@@ -1,10 +1,11 @@
-import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { jsonError, jsonOk, phoneSchema } from "@/lib/api";
 import { signSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
+import { getAppUrl } from "@/lib/urls";
 
 const passwordAuthSchema = z.object({
   phone: phoneSchema,
@@ -25,6 +26,10 @@ async function setUserSession(userId: string) {
 async function authenticateWithPassword(input: { phone: string; password: string }) {
   const existingUser = await prisma.user.findUnique({ where: { phone: input.phone } });
 
+  if (existingUser && existingUser.status !== "active") {
+    throw new Error("账号已被禁用");
+  }
+
   if (existingUser?.passwordHash) {
     const passwordValid = await bcrypt.compare(input.password, existingUser.passwordHash);
 
@@ -34,10 +39,6 @@ async function authenticateWithPassword(input: { phone: string; password: string
 
     await setUserSession(existingUser.id);
     return { userId: existingUser.id, mode: "login" as const };
-  }
-
-  if (existingUser && existingUser.status !== "active") {
-    throw new Error("账号已被禁用");
   }
 
   const passwordHash = await bcrypt.hash(input.password, 12);
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
     const result = await authenticateWithPassword(body);
 
     if (formMode) {
-      redirect("/my-courses");
+      return NextResponse.redirect(getAppUrl("/my-courses", request), 303);
     }
 
     return jsonOk(result);
@@ -67,7 +68,9 @@ export async function POST(request: Request) {
     const message = err instanceof Error ? err.message : "登录失败";
 
     if (formMode) {
-      redirect(`/login?error=${encodeURIComponent(message)}`);
+      const url = getAppUrl("/login", request);
+      url.searchParams.set("error", message);
+      return NextResponse.redirect(url, 303);
     }
 
     return jsonError(message, message === "账号已被禁用" ? 403 : 400);

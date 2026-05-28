@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { jsonError, jsonOk } from "@/lib/api";
 import { getAdminSession } from "@/lib/auth/admin";
-import { buildObjectKey, getCosConfig, getCosObjectUrl, hasCosCredentials } from "@/lib/cos/client";
+import { buildObjectKey, canUseMockMedia, getCosConfig, getCosObjectUrl, hasCosCredentials } from "@/lib/cos/client";
 import { prisma } from "@/lib/db";
 
 const uploadRequestSchema = z.object({
@@ -17,13 +17,17 @@ export async function POST(request: Request) {
     return jsonError("请先登录后台", 401);
   }
 
+  const hasCos = hasCosCredentials();
+
+  if (!hasCos && !canUseMockMedia()) {
+    return jsonError("COS 存储未配置，无法生成上传地址", 503);
+  }
+
   const body = uploadRequestSchema.parse(await request.json().catch(() => ({})));
   const { bucket, region } = getCosConfig();
   const objectKey = buildObjectKey(body.filename);
   const expiresIn = Number(process.env.COS_SIGN_EXPIRES_SECONDS ?? 600);
-  const uploadUrl = hasCosCredentials()
-    ? getCosObjectUrl({ bucket, region, objectKey, method: "PUT", expiresIn })
-    : null;
+  const uploadUrl = hasCos ? getCosObjectUrl({ bucket, region, objectKey, method: "PUT", expiresIn }) : null;
   const asset = await prisma.mediaAsset.create({
     data: {
       bucket,

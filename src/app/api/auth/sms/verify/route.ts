@@ -32,11 +32,13 @@ export async function POST(request: Request) {
     return jsonError("验证码不正确", 400);
   }
 
-  const user = await prisma.user.upsert({
-    where: { phone: body.phone },
-    update: {},
-    create: { phone: body.phone },
-  });
+  const existingUser = await prisma.user.findUnique({ where: { phone: body.phone } });
+
+  if (existingUser?.status === "disabled") {
+    return jsonError("账号已被禁用", 403);
+  }
+
+  const user = existingUser ?? (await prisma.user.create({ data: { phone: body.phone } }));
 
   await prisma.smsCode.update({
     where: { id: smsCode.id },

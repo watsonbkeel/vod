@@ -2,8 +2,13 @@ import { jsonError, jsonOk } from "@/lib/api";
 import { getUserId } from "@/lib/auth/user";
 import { prisma } from "@/lib/db";
 import { ensurePurchaseEntitlement } from "@/lib/entitlements";
+import { canUseMockPayments } from "@/lib/payments/mock";
 
 export async function POST(_request: Request, { params }: { params: Promise<{ orderId: string }> }) {
+  if (!canUseMockPayments()) {
+    return jsonError("模拟支付仅本地调试可用", 404);
+  }
+
   const userId = await getUserId();
 
   if (!userId) {

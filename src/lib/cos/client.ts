@@ -1,5 +1,12 @@
 import COS from "cos-nodejs-sdk-v5";
 
+type CosMethod = "GET" | "PUT";
+type CosObjectLocation = { bucket: string; region: string; objectKey: string };
+
+export function canUseMockMedia(nodeEnv = process.env.NODE_ENV) {
+  return nodeEnv !== "production";
+}
+
 export function hasCosCredentials() {
   return Boolean(process.env.TENCENT_SECRET_ID && process.env.TENCENT_SECRET_KEY);
 }
@@ -25,7 +32,23 @@ export function buildObjectKey(filename: string) {
   return `${prefix}${Date.now()}-${safeName}`;
 }
 
-export function getCosObjectUrl(input: { bucket: string; region: string; objectKey: string; method: "GET" | "PUT"; expiresIn: number }) {
+export async function checkCosObject(input: CosObjectLocation) {
+  try {
+    await getCosClient().headObject({
+      Bucket: input.bucket,
+      Region: input.region,
+      Key: input.objectKey,
+    });
+
+    return { ok: true as const };
+  } catch (err) {
+    const statusCode = typeof (err as { statusCode?: unknown }).statusCode === "number" ? (err as { statusCode: number }).statusCode : 502;
+
+    return { ok: false as const, statusCode };
+  }
+}
+
+export function getCosObjectUrl(input: CosObjectLocation & { method: CosMethod; expiresIn: number }) {
   return getCosClient().getObjectUrl({
     Bucket: input.bucket,
     Region: input.region,

@@ -3,6 +3,7 @@ import { getUserId } from "@/lib/auth/user";
 import { prisma } from "@/lib/db";
 import { closeExpiredOrder, getOrderExpiresAt } from "@/lib/orders";
 import { ensurePurchaseEntitlement } from "@/lib/entitlements";
+import { confirmWeifutongPaidPayload } from "@/lib/payments/weifutong/confirm";
 import { queryWeifutongOrder } from "@/lib/payments/weifutong/query";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ orderId: string }> }) {
@@ -28,29 +29,40 @@ export async function GET(_request: Request, { params }: { params: Promise<{ ord
     try {
       const payment = await queryWeifutongOrder(currentOrder.merchantOrderNo);
 
-      if (payment.tradeState === "SUCCESS") {
-        const paidAt = new Date();
-        const expiresAt = new Date(paidAt.getTime() + currentOrder.course.validityDays * 24 * 60 * 60 * 1000);
-
-        await prisma.$transaction(async (tx) => {
-          await tx.order.update({
-            where: { id: currentOrder.id },
-            data: {
-              status: "paid",
-              thirdPartyOrderNo: payment.transactionId,
-              paidAt,
-              closedAt: null,
-            },
-          });
-          await ensurePurchaseEntitlement(tx, {
-            userId: currentOrder.userId,
-            courseId: currentOrder.courseId,
-            startsAt: paidAt,
-            expiresAt,
-          });
+      if (payment.signatureValid && payment.tradeState === "SUCCESS") {
+        const confirmation = confirmWeifutongPaidPayload(payment.raw, {
+          merchantOrderNo: currentOrder.merchantOrderNo,
+          amountCents: currentOrder.amountCents,
+          merchantId: process.env.WEIFUTONG_MCH_ID,
+          currency: process.env.WEIFUTONG_CURRENCY,
         });
 
-        currentOrder = { ...currentOrder, status: "paid", thirdPartyOrderNo: payment.transactionId, paidAt, closedAt: null };
+        if (!confirmation.ok) {
+          currentOrder = await closeExpiredOrder(currentOrder);
+        } else {
+          const paidAt = confirmation.paidAt;
+          const expiresAt = new Date(paidAt.getTime() + currentOrder.course.validityDays * 24 * 60 * 60 * 1000);
+
+          await prisma.$transaction(async (tx) => {
+            await tx.order.update({
+              where: { id: currentOrder.id },
+              data: {
+                status: "paid",
+                thirdPartyOrderNo: confirmation.transactionId,
+                paidAt,
+                closedAt: null,
+              },
+            });
+            await ensurePurchaseEntitlement(tx, {
+              userId: currentOrder.userId,
+              courseId: currentOrder.courseId,
+              startsAt: paidAt,
+              expiresAt,
+            });
+          });
+
+          currentOrder = { ...currentOrder, status: "paid", thirdPartyOrderNo: confirmation.transactionId, paidAt, closedAt: null };
+        }
       }
     } catch {
       currentOrder = await closeExpiredOrder(currentOrder);

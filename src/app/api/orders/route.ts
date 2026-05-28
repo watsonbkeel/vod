@@ -4,6 +4,7 @@ import { z } from "zod";
 import { jsonError, jsonOk } from "@/lib/api";
 import { getUserId } from "@/lib/auth/user";
 import { prisma } from "@/lib/db";
+import { canUseMockPayments } from "@/lib/payments/mock";
 import { canUseWeifutong, createWeifutongOrder } from "@/lib/payments/weifutong/order";
 
 const orderSchema = z.object({
@@ -39,6 +40,13 @@ export async function POST(request: Request) {
     return jsonError("课程不存在或未上架", 404);
   }
 
+  const useWeifutong = canUseWeifutong();
+  const useMockPayment = canUseMockPayments();
+
+  if (!useWeifutong && !useMockPayment) {
+    return jsonError("支付服务暂不可用，请稍后再试", 503);
+  }
+
   const order = await prisma.order.create({
     data: {
       userId,
@@ -53,8 +61,8 @@ export async function POST(request: Request) {
   let payment: Awaited<ReturnType<typeof createWeifutongOrder>> | { mode: "mock" };
 
   try {
-    payment = canUseWeifutong()
-      ? await createWeifutongOrder({
+    if (useWeifutong) {
+      payment = await createWeifutongOrder({
           channel: body.channel,
           merchantOrderNo: order.merchantOrderNo,
           body: course.title,
@@ -62,8 +70,12 @@ export async function POST(request: Request) {
           notifyUrl: getNotifyUrl(),
           callbackUrl: getCallbackUrl(order.id),
           clientIp: getClientIp(headersList),
-        })
-      : { mode: "mock" as const };
+        });
+    } else if (useMockPayment) {
+      payment = { mode: "mock" as const };
+    } else {
+      return jsonError("支付服务暂不可用，请稍后再试", 503);
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : "创建支付订单失败";
 

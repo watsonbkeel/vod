@@ -1,12 +1,17 @@
 import { z } from "zod";
 import { jsonError, jsonOk } from "@/lib/api";
 import { getUserId } from "@/lib/auth/user";
-import { getCosObjectUrl, hasCosCredentials } from "@/lib/cos/client";
+import { canUseMockMedia, getCosObjectUrl, hasCosCredentials } from "@/lib/cos/client";
 import { prisma } from "@/lib/db";
+import { getAppUrl } from "@/lib/urls";
 
 const playUrlSchema = z.object({
   lessonId: z.string().trim().min(1),
 });
+
+function cosUnavailableError() {
+  return jsonError("视频存储服务暂未配置，请稍后再试", 503);
+}
 
 async function findPlayableLesson(lessonId: string, userId: string) {
   const lesson = await prisma.lesson.findUnique({
@@ -55,6 +60,10 @@ export async function POST(request: Request) {
     return result.error;
   }
 
+  if (!hasCosCredentials() && !canUseMockMedia()) {
+    return cosUnavailableError();
+  }
+
   const expiresIn = Number(process.env.COS_SIGN_EXPIRES_SECONDS ?? 600);
 
   return jsonOk({
@@ -89,8 +98,14 @@ export async function GET(request: Request) {
     return result.error;
   }
 
-  if (!hasCosCredentials()) {
-    return Response.redirect(new URL(`/api/mock-media/${result.mediaAsset.id}`, request.url));
+  const hasCos = hasCosCredentials();
+
+  if (!hasCos && !canUseMockMedia()) {
+    return cosUnavailableError();
+  }
+
+  if (!hasCos) {
+    return Response.redirect(getAppUrl(`/api/mock-media/${result.mediaAsset.id}`, request));
   }
 
   const expiresIn = Number(process.env.COS_SIGN_EXPIRES_SECONDS ?? 600);

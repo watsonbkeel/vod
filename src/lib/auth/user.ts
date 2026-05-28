@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { prisma } from "@/lib/db";
 import { verifySession } from "@/lib/auth/session";
 
 export async function getUserSession() {
@@ -9,7 +10,11 @@ export async function getUserSession() {
 
   try {
     const session = await verifySession(token);
-    return session.role === "user" ? session : null;
+    if (session.role !== "user") return null;
+
+    const user = await prisma.user.findUnique({ where: { id: session.sub }, select: { status: true } });
+
+    return user?.status === "active" ? session : null;
   } catch {
     return null;
   }

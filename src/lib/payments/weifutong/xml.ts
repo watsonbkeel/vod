@@ -17,6 +17,14 @@ export function parseWeifutongXml(xml: string, keys: string[]) {
   return Object.fromEntries(keys.map((key) => [key, parseWeifutongXmlValue(xml, key)]).filter(([, value]) => value)) as Record<string, string>;
 }
 
+export function parseWeifutongXmlFields(xml: string) {
+  const entries = Array.from(xml.matchAll(/<([A-Za-z0-9_]+)>(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]*))<\/\1>/g))
+    .map((match) => [match[1], match[2] ?? match[3] ?? ""] as const)
+    .filter(([key, value]) => key !== "xml" && value);
+
+  return Object.fromEntries(entries) as Record<string, string>;
+}
+
 export async function postWeifutongXml(payload: Record<string, string>) {
   const gatewayUrl = process.env.WEIFUTONG_GATEWAY_URL;
 

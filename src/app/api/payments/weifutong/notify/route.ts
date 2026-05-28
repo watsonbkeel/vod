@@ -1,16 +1,7 @@
 import { prisma } from "@/lib/db";
 import { ensurePurchaseEntitlement } from "@/lib/entitlements";
+import { confirmWeifutongPaidPayload } from "@/lib/payments/weifutong/confirm";
 import { verifyWeifutongSignature } from "@/lib/payments/weifutong/sign";
-
-function getPaidAt(payload: Record<string, string>) {
-  const value = payload.time_end || payload.pay_time;
-  if (!value) return new Date();
-
-  const normalized = value.replace(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/, "$1-$2-$3T$4:$5:$6+08:00");
-  const date = new Date(normalized);
-
-  return Number.isNaN(date.getTime()) ? new Date() : date;
-}
 
 export async function POST(request: Request) {
   const formData = await request.formData();
@@ -18,7 +9,7 @@ export async function POST(request: Request) {
   const signatureValid = verifyWeifutongSignature(payload);
   const merchantOrderNo = payload.out_trade_no || payload.outTradeNo || payload.merchantOrderNo;
 
-  await prisma.paymentCallbackLog.create({
+  const callbackLog = await prisma.paymentCallbackLog.create({
     data: {
       merchantOrderNo,
       channel: payload.trade_type || payload.channel,
@@ -40,8 +31,23 @@ export async function POST(request: Request) {
     return new Response("fail", { status: 404 });
   }
 
+  const confirmation = confirmWeifutongPaidPayload(payload, {
+    merchantOrderNo,
+    amountCents: order.amountCents,
+    merchantId: process.env.WEIFUTONG_MCH_ID,
+    currency: process.env.WEIFUTONG_CURRENCY,
+  });
+
+  if (!confirmation.ok) {
+    await prisma.paymentCallbackLog.update({
+      where: { id: callbackLog.id },
+      data: { errorMessage: confirmation.error },
+    });
+    return new Response("fail", { status: 400 });
+  }
+
   if (order.status !== "paid") {
-    const paidAt = getPaidAt(payload);
+    const paidAt = confirmation.paidAt;
     const expiresAt = new Date(paidAt.getTime() + order.course.validityDays * 24 * 60 * 60 * 1000);
 
     await prisma.$transaction(async (tx) => {
@@ -49,7 +55,7 @@ export async function POST(request: Request) {
         where: { id: order.id },
         data: {
           status: "paid",
-          thirdPartyOrderNo: payload.transaction_id || payload.trade_no || payload.thirdPartyOrderNo,
+          thirdPartyOrderNo: confirmation.transactionId,
           paidAt,
         },
       });
@@ -59,10 +65,15 @@ export async function POST(request: Request) {
         startsAt: paidAt,
         expiresAt,
       });
-      await tx.paymentCallbackLog.updateMany({
-        where: { merchantOrderNo, signatureValid: true, processed: false },
-        data: { processed: true },
+      await tx.paymentCallbackLog.update({
+        where: { id: callbackLog.id },
+        data: { processed: true, errorMessage: null },
       });
+    });
+  } else {
+    await prisma.paymentCallbackLog.update({
+      where: { id: callbackLog.id },
+      data: { processed: true, errorMessage: null },
     });
   }
 
