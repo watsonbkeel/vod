@@ -1,4 +1,5 @@
 import { AdminShell } from "@/components/admin-shell";
+import { requireAdminSession } from "@/lib/auth/admin";
 import { prisma } from "@/lib/db";
 import { updateSiteContent } from "./actions";
 
@@ -18,6 +19,8 @@ const defaultContents = [
 ] as const;
 
 export default async function AdminContentPage() {
+  await requireAdminSession();
+
   const contents = await prisma.siteContent.findMany({
     where: { key: { in: defaultContents.map((item) => item.key) } },
   });

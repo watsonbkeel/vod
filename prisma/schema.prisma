@@ -61,6 +61,7 @@ enum AdminRole {
 model User {
   id           String              @id @default(cuid())
   phone        String              @unique
+  passwordHash String?
   status       UserStatus          @default(active)
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
@@ -171,6 +172,8 @@ model Order {
   channel             PaymentChannel
   status              OrderStatus    @default(pending)
   amountCents         Int
+  paymentCodeUrl      String?
+  paymentPayInfo      String?
   paidAt              DateTime?
   closedAt            DateTime?
   createdAt           DateTime       @default(now())

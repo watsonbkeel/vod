@@ -3,6 +3,11 @@ import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { getUserId } from "@/lib/auth/user";
 import { prisma } from "@/lib/db";
+import { getOrderExpiresAt, isOrderExpired } from "@/lib/orders";
+
+function formatAmount(amountCents: number) {
+  return `HK$${(amountCents / 100).toFixed(2)}`;
+}
 
 export default async function MyCoursesPage() {
   const userId = await getUserId();
@@ -11,26 +16,34 @@ export default async function MyCoursesPage() {
     redirect("/login");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: {
-      entitlements: {
-        where: {
-          status: "active",
-          startsAt: { lte: new Date() },
-          expiresAt: { gt: new Date() },
-        },
-        include: {
-          course: {
-            include: {
-              lessons: { where: { status: "published" }, orderBy: { sortOrder: "asc" } },
+  const [user, recentOrders] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        entitlements: {
+          where: {
+            status: "active",
+            startsAt: { lte: new Date() },
+            expiresAt: { gt: new Date() },
+          },
+          include: {
+            course: {
+              include: {
+                lessons: { where: { status: "published" }, orderBy: { sortOrder: "asc" } },
+              },
             },
           },
+          orderBy: { expiresAt: "desc" },
         },
-        orderBy: { expiresAt: "desc" },
       },
-    },
-  });
+    }),
+    prisma.order.findMany({
+      where: { userId, status: { in: ["pending", "closed"] } },
+      include: { course: { select: { title: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    }),
+  ]);
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -60,6 +73,33 @@ export default async function MyCoursesPage() {
             })
           )}
         </div>
+        {recentOrders.length > 0 ? (
+          <div className="mt-8 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <h2 className="text-xl font-semibold text-slate-950">订单</h2>
+            <div className="mt-4 grid gap-3">
+              {recentOrders.map((order) => {
+                const expired = order.status === "closed" || isOrderExpired(order);
+                return (
+                  <div key={order.id} className="flex flex-col justify-between gap-3 rounded-2xl bg-slate-50 p-4 text-sm md:flex-row md:items-center">
+                    <div>
+                      <p className="font-medium text-slate-950">{order.course.title}</p>
+                      <p className="mt-1 text-slate-500">
+                        {formatAmount(order.amountCents)} · {order.channel === "wechat" ? "微信支付" : "支付宝"} · {expired ? "订单超时已关闭" : `有效期至 ${getOrderExpiresAt(order).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`}
+                      </p>
+                    </div>
+                    {expired ? (
+                      <span className="rounded-full bg-slate-200 px-4 py-2 text-center text-xs font-medium text-slate-500">已关闭</span>
+                    ) : (
+                      <Link href={`/orders/${order.id}`} className="rounded-full bg-orange-600 px-5 py-2 text-center text-sm font-medium text-white hover:bg-orange-500">
+                        继续支付
+                      </Link>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
       </section>
     </main>
   );

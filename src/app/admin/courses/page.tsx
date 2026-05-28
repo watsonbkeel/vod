@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { AdminShell } from "@/components/admin-shell";
+import { requireAdminSession } from "@/lib/auth/admin";
 import { CourseForm } from "@/components/course-form";
 import { formatPrice, formatValidity } from "@/lib/courses";
 import { prisma } from "@/lib/db";
 import { createCourse, deleteCourse } from "./actions";
 
 export default async function AdminCoursesPage() {
+  await requireAdminSession();
+
   const courses = await prisma.course.findMany({
     orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     include: { _count: { select: { lessons: true } } },

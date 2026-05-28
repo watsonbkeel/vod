@@ -8,11 +8,18 @@ export async function ensurePurchaseEntitlement(tx: EntitlementTx, input: { user
       userId: input.userId,
       courseId: input.courseId,
       source: "purchase",
-      startsAt: input.startsAt,
+      status: "active",
     },
+    orderBy: { expiresAt: "desc" },
   });
+  const durationMs = input.expiresAt.getTime() - input.startsAt.getTime();
 
-  if (existing) return existing;
+  if (existing && existing.expiresAt > input.startsAt) {
+    return tx.courseEntitlement.update({
+      where: { id: existing.id },
+      data: { expiresAt: new Date(existing.expiresAt.getTime() + durationMs) },
+    });
+  }
 
   return tx.courseEntitlement.create({
     data: {

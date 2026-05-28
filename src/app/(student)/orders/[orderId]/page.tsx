@@ -3,6 +3,7 @@ import { SiteHeader } from "@/components/site-header";
 import { OrderResult } from "@/components/order-result";
 import { getUserId } from "@/lib/auth/user";
 import { prisma } from "@/lib/db";
+import { closeExpiredOrder, getOrderExpiresAt } from "@/lib/orders";
 
 export default async function OrderPage({ params }: { params: Promise<{ orderId: string }> }) {
   const userId = await getUserId();
@@ -21,19 +22,26 @@ export default async function OrderPage({ params }: { params: Promise<{ orderId:
     notFound();
   }
 
+  const currentOrder = await closeExpiredOrder(order);
+
   return (
     <main className="min-h-screen bg-slate-50">
       <SiteHeader />
       <section className="mx-auto max-w-xl px-4 py-16 sm:px-6">
         <OrderResult
           initialOrder={{
-            orderId: order.id,
-            merchantOrderNo: order.merchantOrderNo,
-            channel: order.channel,
-            status: order.status,
-            amountCents: order.amountCents,
-            paidAt: order.paidAt?.toISOString() ?? null,
-            course: order.course,
+            orderId: currentOrder.id,
+            merchantOrderNo: currentOrder.merchantOrderNo,
+            channel: currentOrder.channel,
+            status: currentOrder.status,
+            amountCents: currentOrder.amountCents,
+            paidAt: currentOrder.paidAt?.toISOString() ?? null,
+            closedAt: currentOrder.closedAt?.toISOString() ?? null,
+            createdAt: currentOrder.createdAt.toISOString(),
+            expiresAt: getOrderExpiresAt(currentOrder).toISOString(),
+            paymentCodeUrl: currentOrder.paymentCodeUrl,
+            paymentPayInfo: currentOrder.paymentPayInfo,
+            course: currentOrder.course,
           }}
         />
       </section>

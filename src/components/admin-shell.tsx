@@ -5,6 +5,7 @@ const adminNav = [
   { href: "/admin/courses", label: "课程管理" },
   { href: "/admin/orders", label: "订单管理" },
   { href: "/admin/users", label: "用户与赠课" },
+  { href: "/admin/progress", label: "学习进度" },
   { href: "/admin/content", label: "站点内容" },
 ];
 

@@ -1,4 +1,5 @@
 import { AdminShell } from "@/components/admin-shell";
+import { requireAdminSession } from "@/lib/auth/admin";
 
 const stats = [
   ["课程", "2"],
@@ -7,7 +8,9 @@ const stats = [
   ["待处理上传", "0"],
 ];
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  await requireAdminSession();
+
   return (
     <AdminShell title="仪表盘">
       <div className="grid gap-4 md:grid-cols-4">

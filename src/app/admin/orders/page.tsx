@@ -1,4 +1,5 @@
 import { AdminShell } from "@/components/admin-shell";
+import { requireAdminSession } from "@/lib/auth/admin";
 import { prisma } from "@/lib/db";
 
 function formatAmount(amountCents: number) {
@@ -6,6 +7,8 @@ function formatAmount(amountCents: number) {
 }
 
 export default async function AdminOrdersPage() {
+  await requireAdminSession();
+
   const [orders, callbacks] = await Promise.all([
     prisma.order.findMany({
       orderBy: { createdAt: "desc" },

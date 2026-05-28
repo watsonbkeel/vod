@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminShell } from "@/components/admin-shell";
+import { requireAdminSession } from "@/lib/auth/admin";
 import { CourseForm } from "@/components/course-form";
 import { LessonForm } from "@/components/lesson-form";
 import { LessonMediaForm } from "@/components/lesson-media-form";
@@ -12,6 +13,8 @@ type EditCoursePageProps = {
 };
 
 export default async function EditCoursePage({ params }: EditCoursePageProps) {
+  await requireAdminSession();
+
   const { courseId } = await params;
   const course = await prisma.course.findUnique({
     where: { id: courseId },

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { jsonError, jsonOk } from "@/lib/api";
 import { getAdminSession } from "@/lib/auth/admin";
-import { buildObjectKey, getCosConfig } from "@/lib/cos/client";
+import { buildObjectKey, getCosConfig, getCosObjectUrl, hasCosCredentials } from "@/lib/cos/client";
 import { prisma } from "@/lib/db";
 
 const uploadRequestSchema = z.object({
@@ -20,6 +20,10 @@ export async function POST(request: Request) {
   const body = uploadRequestSchema.parse(await request.json().catch(() => ({})));
   const { bucket, region } = getCosConfig();
   const objectKey = buildObjectKey(body.filename);
+  const expiresIn = Number(process.env.COS_SIGN_EXPIRES_SECONDS ?? 600);
+  const uploadUrl = hasCosCredentials()
+    ? getCosObjectUrl({ bucket, region, objectKey, method: "PUT", expiresIn })
+    : null;
   const asset = await prisma.mediaAsset.create({
     data: {
       bucket,
@@ -40,8 +44,11 @@ export async function POST(request: Request) {
     uploadMethod: "putObject",
     status: asset.status,
     upload: {
-      mode: process.env.TENCENT_SECRET_ID && process.env.TENCENT_SECRET_KEY ? "cos" : "mock",
-      expiresIn: Number(process.env.COS_SIGN_EXPIRES_SECONDS ?? 600),
+      mode: uploadUrl ? "cos" : "mock",
+      method: uploadUrl ? "PUT" : null,
+      url: uploadUrl,
+      headers: uploadUrl ? { "Content-Type": body.mimeType } : null,
+      expiresIn,
     },
   });
 }

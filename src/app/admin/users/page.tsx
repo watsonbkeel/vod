@@ -1,8 +1,11 @@
 import { AdminShell } from "@/components/admin-shell";
+import { requireAdminSession } from "@/lib/auth/admin";
 import { prisma } from "@/lib/db";
 import { grantCourse } from "./actions";
 
 export default async function AdminUsersPage() {
+  await requireAdminSession();
+
   const [users, courses] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },

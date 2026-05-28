@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { PurchaseBox } from "@/components/purchase-box";
 import { SiteHeader } from "@/components/site-header";
+import { getUserId } from "@/lib/auth/user";
 import { getPublishedCourseBySlug } from "@/lib/courses";
 
 type CourseDetailPageProps = {
@@ -12,6 +13,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
   const { slug } = await params;
   await connection();
   const course = await getPublishedCourseBySlug(slug);
+  const userId = await getUserId();
 
   if (!course) {
     notFound();
@@ -64,7 +66,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
               <dd className="font-medium text-slate-950">不支持</dd>
             </div>
           </dl>
-          <PurchaseBox courseId={course.id} />
+          <PurchaseBox courseId={course.id} signedIn={Boolean(userId)} />
         </aside>
       </section>
     </main>
