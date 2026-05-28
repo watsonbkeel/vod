@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -13,20 +14,48 @@ type UploadTokenResponse = {
   upload: { mode: string; method: string | null; url: string | null; headers: Record<string, string> | null; expiresIn: number };
 };
 
-export function LessonMediaForm({ lessonId, action }: { lessonId: string; action: (formData: FormData) => void | Promise<void> }) {
+type BindMediaResponse = {
+  lessonId: string;
+  mediaAssetId: string;
+  filename: string;
+};
+
+type UploadPhase = "creating" | "uploading" | "confirming" | "binding" | "";
+
+const phaseLabels: Record<Exclude<UploadPhase, "">, string> = {
+  creating: "正在创建上传任务...",
+  uploading: "正在上传到 COS...",
+  confirming: "正在确认 COS 视频对象...",
+  binding: "正在绑定到课时...",
+};
+
+export function LessonMediaForm({ courseId, lessonId }: { courseId: string; lessonId: string }) {
+  const router = useRouter();
   const [asset, setAsset] = useState<UploadTokenResponse | null>(null);
   const [error, setError] = useState("");
   const [bound, setBound] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [isBinding, startBinding] = useTransition();
+  const [phase, setPhase] = useState<UploadPhase>("");
+  const loading = phase !== "";
 
   async function bindAsset(assetId: string) {
-    const formData = new FormData();
-    formData.set("lessonId", lessonId);
-    formData.set("mediaAssetId", assetId);
+    if (!assetId) {
+      throw new Error("请选择要绑定的视频");
+    }
 
-    await action(formData);
+    setPhase("binding");
+    const response = await fetch(`/api/admin/lessons/${lessonId}/media`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseId, mediaAssetId: assetId }),
+    });
+    const result = (await response.json()) as ApiResult<BindMediaResponse>;
+
+    if (!response.ok || !result.ok) {
+      throw new Error(result.ok ? "绑定视频失败" : result.error);
+    }
+
     setBound(true);
+    router.refresh();
   }
 
   async function completeUpload(assetId: string) {
@@ -46,7 +75,7 @@ export function LessonMediaForm({ lessonId, action }: { lessonId: string; action
     setError("");
     setAsset(null);
     setBound(false);
-    setLoading(true);
+    setPhase("creating");
 
     try {
       const response = await fetch("/api/cos/upload-token", {
@@ -65,6 +94,7 @@ export function LessonMediaForm({ lessonId, action }: { lessonId: string; action
           throw new Error("COS 上传地址无效");
         }
 
+        setPhase("uploading");
         const uploadResponse = await fetch(result.data.upload.url, {
           method: "PUT",
           headers: result.data.upload.headers ?? { "Content-Type": file.type || "video/mp4" },
@@ -76,25 +106,27 @@ export function LessonMediaForm({ lessonId, action }: { lessonId: string; action
         }
       }
 
+      setPhase("confirming");
       await completeUpload(result.data.assetId);
       setAsset({ ...result.data, status: "uploaded" });
       await bindAsset(result.data.assetId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "创建上传任务失败");
     } finally {
-      setLoading(false);
+      setPhase("");
     }
   }
 
-  function bindUploadedAsset(formData: FormData) {
+  async function bindUploadedAsset(formData: FormData) {
     setError("");
-    startBinding(async () => {
-      try {
-        await bindAsset(String(formData.get("mediaAssetId") ?? ""));
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "绑定视频失败");
-      }
-    });
+
+    try {
+      await bindAsset(String(formData.get("mediaAssetId") ?? ""));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "绑定视频失败");
+    } finally {
+      setPhase("");
+    }
   }
 
   return (
@@ -103,8 +135,8 @@ export function LessonMediaForm({ lessonId, action }: { lessonId: string; action
       <input type="file" accept="video/mp4" onChange={(event) => {
         const file = event.target.files?.[0];
         if (file) void createUpload(file);
-      }} className="mt-3 w-full text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-slate-950 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white" />
-      {loading ? <p className="mt-3 text-sm text-slate-500">正在创建并确认上传任务...</p> : null}
+      }} disabled={loading} className="mt-3 w-full text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-slate-950 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white disabled:cursor-not-allowed disabled:opacity-60" />
+      {phase ? <p className="mt-3 text-sm text-slate-500">{phaseLabels[phase]}</p> : null}
       {asset ? (
         <form action={bindUploadedAsset} className="mt-3 space-y-3">
           <input type="hidden" name="lessonId" value={lessonId} />
@@ -114,8 +146,8 @@ export function LessonMediaForm({ lessonId, action }: { lessonId: string; action
             <p>Bucket：{asset.bucket}</p>
             <p>ObjectKey：{asset.objectKey}</p>
           </div>
-          <button disabled={bound || isBinding} className="rounded-full bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-600 disabled:cursor-not-allowed disabled:opacity-60">
-            {bound ? "已绑定" : isBinding ? "绑定中" : "绑定到该课时"}
+          <button disabled={bound || loading} className="rounded-full bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-600 disabled:cursor-not-allowed disabled:opacity-60">
+            {bound ? "已绑定" : phase === "binding" ? "绑定中" : "绑定到该课时"}
           </button>
         </form>
       ) : null}

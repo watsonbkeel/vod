@@ -3,6 +3,7 @@ import { LessonPlayer } from "@/components/lesson-player";
 import { SiteHeader } from "@/components/site-header";
 import { getUserId } from "@/lib/auth/user";
 import { prisma } from "@/lib/db";
+import { playableLessonWhere } from "@/lib/lessons/playable";
 
 export default async function LearnPage({ params }: { params: Promise<{ courseId: string }> }) {
   const userId = await getUserId();
@@ -30,7 +31,7 @@ export default async function LearnPage({ params }: { params: Promise<{ courseId
     where: { id: courseId, status: "published" },
     include: {
       lessons: {
-        where: { status: "published" },
+        where: playableLessonWhere(),
         orderBy: { sortOrder: "asc" },
         include: {
           lessonProgress: { where: { userId }, take: 1 },

@@ -6,7 +6,7 @@ import { CourseForm } from "@/components/course-form";
 import { LessonForm } from "@/components/lesson-form";
 import { LessonMediaForm } from "@/components/lesson-media-form";
 import { prisma } from "@/lib/db";
-import { bindLessonMedia, createLesson, deleteLesson, updateCourse, updateLesson } from "../../actions";
+import { createLesson, deleteLesson, updateCourse, updateLesson } from "../../actions";
 
 type EditCoursePageProps = {
   params: Promise<{ courseId: string }>;
@@ -54,14 +54,16 @@ export default async function EditCoursePage({ params }: EditCoursePageProps) {
                           <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">{lesson.status}</span>
                         </div>
                         <p className="mt-1 text-sm text-slate-500">{lesson.summary || "暂无简介"}</p>
-                        <p className="mt-1 text-xs text-slate-400">{lesson.mediaAsset ? `已绑定视频：${lesson.mediaAsset.filename}` : "未绑定视频"}</p>
+                        <p className="mt-1 text-xs text-slate-400">
+                          {lesson.mediaAsset ? `已绑定视频：${lesson.mediaAsset.filename}（${lesson.mediaAsset.status === "uploaded" ? "可播放" : "未上传完成"}）` : "未绑定视频"}
+                        </p>
                       </div>
                       <form action={deleteLesson.bind(null, course.id, lesson.id)}>
                         <button className="rounded-full border border-red-200 px-4 py-2 text-sm text-red-600 hover:border-red-500">删除</button>
                       </form>
                     </div>
                     <LessonForm action={updateLesson.bind(null, course.id, lesson.id)} lesson={lesson} submitLabel="保存课时" />
-                    <LessonMediaForm lessonId={lesson.id} action={bindLessonMedia.bind(null, course.id)} />
+                    <LessonMediaForm courseId={course.id} lessonId={lesson.id} />
                   </div>
                 ))
               )}

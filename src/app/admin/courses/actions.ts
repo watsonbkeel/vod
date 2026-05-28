@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdminSession } from "@/lib/auth/admin";
+import { bindUploadedMediaToLesson } from "@/lib/admin/media-binding";
 import { prisma } from "@/lib/db";
 
 const courseFormSchema = z.object({
@@ -148,32 +149,13 @@ export async function bindLessonMedia(courseId: string, formData: FormData) {
     lessonId: formData.get("lessonId"),
     mediaAssetId: formData.get("mediaAssetId"),
   });
-  const course = await prisma.course.findUnique({ where: { id: courseId }, select: { slug: true } });
 
-  if (!course) {
-    throw new Error("课程不存在");
-  }
-
-  const lesson = await prisma.lesson.findFirst({ where: { id: data.lessonId, courseId }, select: { id: true } });
-
-  if (!lesson) {
-    throw new Error("课时不存在");
-  }
-
-  const mediaAsset = await prisma.mediaAsset.findUnique({ where: { id: data.mediaAssetId }, select: { status: true } });
-
-  if (!mediaAsset) {
-    throw new Error("视频不存在");
-  }
-
-  if (mediaAsset.status !== "uploaded") {
-    throw new Error("视频尚未上传完成");
-  }
-
-  await prisma.lesson.update({
-    where: { id: data.lessonId, courseId },
-    data: { mediaAssetId: data.mediaAssetId },
+  const result = await bindUploadedMediaToLesson({
+    courseId,
+    lessonId: data.lessonId,
+    mediaAssetId: data.mediaAssetId,
   });
-  revalidatePath(`/courses/${course.slug}`);
+
+  revalidatePath(`/courses/${result.course.slug}`);
   revalidatePath(`/admin/courses/${courseId}/edit`);
 }

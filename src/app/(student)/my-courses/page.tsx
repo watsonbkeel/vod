@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { getUserId } from "@/lib/auth/user";
 import { prisma } from "@/lib/db";
+import { playableLessonWhere } from "@/lib/lessons/playable";
 import { getOrderExpiresAt, isOrderExpired } from "@/lib/orders";
 
 function formatAmount(amountCents: number) {
@@ -29,7 +30,7 @@ export default async function MyCoursesPage() {
           include: {
             course: {
               include: {
-                lessons: { where: { status: "published" }, orderBy: { sortOrder: "asc" } },
+                lessons: { where: playableLessonWhere(), orderBy: { sortOrder: "asc" } },
               },
             },
           },
@@ -62,7 +63,7 @@ export default async function MyCoursesPage() {
                   <div>
                     <h2 className="text-xl font-semibold text-slate-950">{entitlement.course.title}</h2>
                     <p className="mt-2 text-sm text-slate-500">
-                      有效期至：{entitlement.expiresAt.toLocaleDateString("zh-CN")} · 共 {lessonCount} 个已发布课时
+                      有效期至：{entitlement.expiresAt.toLocaleDateString("zh-CN")} · 共 {lessonCount} 个可播放课时
                     </p>
                   </div>
                   <Link href={`/learn/${entitlement.course.id}`} className="rounded-full bg-slate-950 px-5 py-2 text-center text-sm font-medium text-white hover:bg-slate-800">

@@ -1,5 +1,6 @@
 import type { Course, Lesson } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { playableLessonWhere } from "@/lib/lessons/playable";
 
 export type CourseListItem = {
   id: string;
@@ -46,7 +47,7 @@ export async function getPublishedCourses() {
   const courses = await prisma.course.findMany({
     where: { status: "published" },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-    include: { _count: { select: { lessons: true } } },
+    include: { _count: { select: { lessons: { where: playableLessonWhere() } } } },
   });
 
   return courses.map(toCourseListItem);
@@ -57,11 +58,11 @@ export async function getPublishedCourseBySlug(slug: string): Promise<CourseDeta
     where: { slug, status: "published" },
     include: {
       lessons: {
-        where: { status: "published" },
+        where: playableLessonWhere(),
         orderBy: { sortOrder: "asc" },
         select: { id: true, title: true, summary: true, sortOrder: true, durationSec: true },
       },
-      _count: { select: { lessons: true } },
+      _count: { select: { lessons: { where: playableLessonWhere() } } },
     },
   });
 

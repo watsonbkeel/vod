@@ -84,8 +84,10 @@ export function LessonPlayer({ courseTitle, lessons }: { courseTitle: string; le
               const nextPosition = Math.floor(event.currentTarget.currentTime);
               if (nextPosition > 0 && nextPosition % 15 === 0 && nextPosition !== currentProgress.positionSec) void saveProgress(nextPosition);
             }} onEnded={(event) => void saveProgress(Math.floor(event.currentTarget.duration || currentProgress.positionSec), true)} />
+          ) : selectedLesson ? (
+            error || "正在准备播放..."
           ) : (
-            error || "请选择可播放课时"
+            error || "暂无可播放课时"
           )}
         </div>
         <div className="border-t border-white/10 p-6">
@@ -99,7 +101,7 @@ export function LessonPlayer({ courseTitle, lessons }: { courseTitle: string; le
         <h2 className="text-lg font-semibold">课时目录</h2>
         <div className="mt-4 space-y-2">
           {lessons.length === 0 ? (
-            <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">暂无已上架课时</p>
+            <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">暂无可播放课时</p>
           ) : (
             lessons.map((lesson, index) => {
               const progress = progressByLesson[lesson.id] ?? { positionSec: lesson.positionSec, completed: lesson.completed };
