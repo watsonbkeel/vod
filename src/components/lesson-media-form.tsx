@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -35,6 +35,8 @@ export function LessonMediaForm({ courseId, lessonId }: { courseId: string; less
   const [error, setError] = useState("");
   const [bound, setBound] = useState(false);
   const [phase, setPhase] = useState<UploadPhase>("");
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const loading = phase !== "";
 
   async function bindAsset(assetId: string) {
@@ -71,11 +73,45 @@ export function LessonMediaForm({ courseId, lessonId }: { courseId: string; less
     }
   }
 
+  function uploadToCos(upload: UploadTokenResponse["upload"], file: File) {
+    return new Promise<void>((resolve, reject) => {
+      if (!upload.url || upload.method !== "PUT") {
+        reject(new Error("COS 上传地址无效"));
+        return;
+      }
+
+      const request = new XMLHttpRequest();
+      request.open("PUT", upload.url);
+
+      for (const [key, value] of Object.entries(upload.headers ?? { "Content-Type": file.type || "video/mp4" })) {
+        request.setRequestHeader(key, value);
+      }
+
+      request.upload.onprogress = (event) => {
+        if (event.lengthComputable && event.total > 0) {
+          setUploadProgress(Math.max(1, Math.min(99, Math.round((event.loaded / event.total) * 100))));
+        }
+      };
+      request.onload = () => {
+        if (request.status >= 200 && request.status < 300) {
+          setUploadProgress(100);
+          resolve();
+        } else {
+          reject(new Error(`上传到 COS 失败（${request.status}）`));
+        }
+      };
+      request.onerror = () => reject(new Error("上传到 COS 失败，请检查网络或 COS 跨域配置"));
+      request.onabort = () => reject(new Error("上传已取消"));
+      request.send(file);
+    });
+  }
+
   async function createUpload(file: File) {
     setError("");
     setAsset(null);
     setBound(false);
     setPhase("creating");
+    setUploadProgress(0);
 
     try {
       const response = await fetch("/api/cos/upload-token", {
@@ -90,30 +126,20 @@ export function LessonMediaForm({ courseId, lessonId }: { courseId: string; less
       }
 
       if (result.data.upload.mode === "cos") {
-        if (!result.data.upload.url || result.data.upload.method !== "PUT") {
-          throw new Error("COS 上传地址无效");
-        }
-
         setPhase("uploading");
-        const uploadResponse = await fetch(result.data.upload.url, {
-          method: "PUT",
-          headers: result.data.upload.headers ?? { "Content-Type": file.type || "video/mp4" },
-          body: file,
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error("上传到 COS 失败");
-        }
+        await uploadToCos(result.data.upload, file);
       }
 
       setPhase("confirming");
       await completeUpload(result.data.assetId);
       setAsset({ ...result.data, status: "uploaded" });
       await bindAsset(result.data.assetId);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       setError(err instanceof Error ? err.message : "创建上传任务失败");
     } finally {
       setPhase("");
+      setUploadProgress(null);
     }
   }
 
@@ -132,11 +158,24 @@ export function LessonMediaForm({ courseId, lessonId }: { courseId: string; less
   return (
     <div className="rounded-2xl bg-slate-50 p-4">
       <p className="text-sm font-medium text-slate-700">视频上传/绑定</p>
-      <input type="file" accept="video/mp4" onChange={(event) => {
+      <input ref={fileInputRef} type="file" accept="video/mp4" onChange={(event) => {
         const file = event.target.files?.[0];
         if (file) void createUpload(file);
       }} disabled={loading} className="mt-3 w-full text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-slate-950 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white disabled:cursor-not-allowed disabled:opacity-60" />
-      {phase ? <p className="mt-3 text-sm text-slate-500">{phaseLabels[phase]}</p> : null}
+      {phase ? (
+        <div className="mt-3 rounded-2xl bg-white p-3 text-sm text-slate-600 ring-1 ring-slate-200" role="status" aria-live="polite">
+          <div className="flex items-center justify-between gap-3">
+            <span>{phaseLabels[phase]}</span>
+            {uploadProgress !== null ? <span className="font-medium text-slate-900">{uploadProgress}%</span> : null}
+          </div>
+          {uploadProgress !== null ? (
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-cyan-600 transition-all" style={{ width: `${uploadProgress}%` }} />
+            </div>
+          ) : null}
+          <p className="mt-2 text-xs text-slate-400">请保持页面打开，上传完成后会自动确认并绑定到当前课时。</p>
+        </div>
+      ) : null}
       {asset ? (
         <form action={bindUploadedAsset} className="mt-3 space-y-3">
           <input type="hidden" name="lessonId" value={lessonId} />

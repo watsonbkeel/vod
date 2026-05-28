@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { jsonError, jsonOk } from "@/lib/api";
 import { getUserId } from "@/lib/auth/user";
-import { canUseMockMedia, getCosObjectUrl, hasCosCredentials } from "@/lib/cos/client";
+import { canUseMockMedia, checkCosObject, getCosObjectUrl, hasCosCredentials } from "@/lib/cos/client";
 import { prisma } from "@/lib/db";
 import { getAppUrl } from "@/lib/urls";
 
@@ -66,6 +66,29 @@ export async function POST(request: Request) {
 
   const expiresIn = Number(process.env.COS_SIGN_EXPIRES_SECONDS ?? 600);
 
+  const hasCos = hasCosCredentials();
+
+  if (!hasCos) {
+    return jsonOk({
+      lessonId: result.lesson.id,
+      courseId: result.lesson.courseId,
+      assetId: result.mediaAsset.id,
+      playUrl: getAppUrl(`/api/mock-media/${result.mediaAsset.id}`, request).toString(),
+      streamMode: "redirect",
+      expiresIn,
+    });
+  }
+
+  const object = await checkCosObject({
+    bucket: result.mediaAsset.bucket,
+    region: result.mediaAsset.region,
+    objectKey: result.mediaAsset.objectKey,
+  });
+
+  if (!object.ok) {
+    return jsonError("COS 视频对象不存在或无法访问，请重新上传并绑定该课时", object.statusCode === 404 ? 404 : 502);
+  }
+
   return jsonOk({
     lessonId: result.lesson.id,
     courseId: result.lesson.courseId,
@@ -73,7 +96,14 @@ export async function POST(request: Request) {
     bucket: result.mediaAsset.bucket,
     region: result.mediaAsset.region,
     objectKey: result.mediaAsset.objectKey,
-    playUrl: `/api/lessons/play-url?lessonId=${encodeURIComponent(result.lesson.id)}`,
+    playUrl: getCosObjectUrl({
+      bucket: result.mediaAsset.bucket,
+      region: result.mediaAsset.region,
+      objectKey: result.mediaAsset.objectKey,
+      method: "GET",
+      expiresIn,
+    }),
+    streamMode: "redirect",
     expiresIn,
   });
 }

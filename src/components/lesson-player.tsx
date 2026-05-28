@@ -15,6 +15,7 @@ type LessonItem = {
 type PlayUrlResponse = {
   playUrl: string;
   expiresIn: number;
+  streamMode?: "redirect" | "proxy";
 };
 
 export function LessonPlayer({ courseTitle, lessons }: { courseTitle: string; lessons: LessonItem[] }) {
@@ -22,6 +23,7 @@ export function LessonPlayer({ courseTitle, lessons }: { courseTitle: string; le
   const [playUrl, setPlayUrl] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
 
   const selectedLesson = useMemo(() => lessons.find((lesson) => lesson.id === selectedLessonId), [lessons, selectedLessonId]);
   const [progressByLesson, setProgressByLesson] = useState<Record<string, { positionSec: number; completed: boolean }>>(() => Object.fromEntries(lessons.map((lesson) => [lesson.id, { positionSec: lesson.positionSec, completed: lesson.completed }])));
@@ -33,6 +35,7 @@ export function LessonPlayer({ courseTitle, lessons }: { courseTitle: string; le
     async function loadPlayUrl() {
       setError("");
       setPlayUrl("");
+      setVideoReady(false);
       setLoading(true);
 
       try {
@@ -80,10 +83,20 @@ export function LessonPlayer({ courseTitle, lessons }: { courseTitle: string; le
           {loading ? (
             "正在获取播放地址..."
           ) : playUrl ? (
-            <video key={playUrl} src={playUrl} controls controlsList="nodownload" className="h-full w-full" onTimeUpdate={(event) => {
-              const nextPosition = Math.floor(event.currentTarget.currentTime);
-              if (nextPosition > 0 && nextPosition % 15 === 0 && nextPosition !== currentProgress.positionSec) void saveProgress(nextPosition);
-            }} onEnded={(event) => void saveProgress(Math.floor(event.currentTarget.duration || currentProgress.positionSec), true)} />
+            <div className="relative h-full w-full">
+              {!videoReady ? <div className="absolute inset-0 flex items-center justify-center bg-slate-900 text-sm text-slate-300">正在加载视频流...</div> : null}
+              <video key={playUrl} src={playUrl} controls controlsList="nodownload" preload="metadata" className="h-full w-full" onCanPlay={() => setVideoReady(true)} onLoadedMetadata={(event) => {
+                if (currentProgress.positionSec > 0 && Number.isFinite(event.currentTarget.duration) && currentProgress.positionSec < event.currentTarget.duration) {
+                  event.currentTarget.currentTime = currentProgress.positionSec;
+                }
+              }} onError={() => {
+                setVideoReady(false);
+                setError("视频加载失败，请刷新重试或联系管理员检查视频文件/COS 访问权限。");
+              }} onTimeUpdate={(event) => {
+                const nextPosition = Math.floor(event.currentTarget.currentTime);
+                if (nextPosition > 0 && nextPosition % 15 === 0 && nextPosition !== currentProgress.positionSec) void saveProgress(nextPosition);
+              }} onEnded={(event) => void saveProgress(Math.floor(event.currentTarget.duration || currentProgress.positionSec), true)} />
+            </div>
           ) : selectedLesson ? (
             error || "正在准备播放..."
           ) : (
