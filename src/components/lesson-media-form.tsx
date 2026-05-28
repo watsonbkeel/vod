@@ -20,6 +20,15 @@ export function LessonMediaForm({ lessonId, action }: { lessonId: string; action
   const [loading, setLoading] = useState(false);
   const [isBinding, startBinding] = useTransition();
 
+  async function bindAsset(assetId: string) {
+    const formData = new FormData();
+    formData.set("lessonId", lessonId);
+    formData.set("mediaAssetId", assetId);
+
+    await action(formData);
+    setBound(true);
+  }
+
   async function completeUpload(assetId: string) {
     const response = await fetch("/api/cos/complete-upload", {
       method: "POST",
@@ -69,6 +78,7 @@ export function LessonMediaForm({ lessonId, action }: { lessonId: string; action
 
       await completeUpload(result.data.assetId);
       setAsset({ ...result.data, status: "uploaded" });
+      await bindAsset(result.data.assetId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "创建上传任务失败");
     } finally {
@@ -80,8 +90,7 @@ export function LessonMediaForm({ lessonId, action }: { lessonId: string; action
     setError("");
     startBinding(async () => {
       try {
-        await action(formData);
-        setBound(true);
+        await bindAsset(String(formData.get("mediaAssetId") ?? ""));
       } catch (err) {
         setError(err instanceof Error ? err.message : "绑定视频失败");
       }

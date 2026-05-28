@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
@@ -21,7 +20,6 @@ async function postJson<T>(url: string, body: unknown) {
 }
 
 export function LoginForm({ initialError = "" }: { initialError?: string }) {
-  const router = useRouter();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -37,8 +35,7 @@ export function LoginForm({ initialError = "" }: { initialError?: string }) {
     try {
       const result = await postJson<{ userId: string; mode: "login" | "register" }>("/api/auth/password", { phone, password });
       setMessage(result.mode === "register" ? "账号已创建，正在进入课程中心。" : "登录成功，正在进入课程中心。");
-      router.push("/my-courses");
-      router.refresh();
+      window.location.assign("/my-courses");
     } catch (err) {
       setError(err instanceof Error ? err.message : "登录失败");
     } finally {

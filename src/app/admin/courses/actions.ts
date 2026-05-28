@@ -150,11 +150,25 @@ export async function bindLessonMedia(courseId: string, formData: FormData) {
   });
   const course = await prisma.course.findUnique({ where: { id: courseId }, select: { slug: true } });
 
-  if (!course) return;
+  if (!course) {
+    throw new Error("课程不存在");
+  }
 
-  const mediaAsset = await prisma.mediaAsset.findUnique({ where: { id: data.mediaAssetId } });
+  const lesson = await prisma.lesson.findFirst({ where: { id: data.lessonId, courseId }, select: { id: true } });
 
-  if (!mediaAsset) return;
+  if (!lesson) {
+    throw new Error("课时不存在");
+  }
+
+  const mediaAsset = await prisma.mediaAsset.findUnique({ where: { id: data.mediaAssetId }, select: { status: true } });
+
+  if (!mediaAsset) {
+    throw new Error("视频不存在");
+  }
+
+  if (mediaAsset.status !== "uploaded") {
+    throw new Error("视频尚未上传完成");
+  }
 
   await prisma.lesson.update({
     where: { id: data.lessonId, courseId },

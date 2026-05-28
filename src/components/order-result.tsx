@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -38,7 +37,6 @@ function formatRemaining(ms: number) {
 }
 
 export function OrderResult({ initialOrder }: { initialOrder: OrderView }) {
-  const router = useRouter();
   const [order, setOrder] = useState(initialOrder);
   const [error, setError] = useState("");
   const [qrCode, setQrCode] = useState("");
@@ -49,6 +47,12 @@ export function OrderResult({ initialOrder }: { initialOrder: OrderView }) {
   const closed = order.status === "closed";
   const paymentLabel = order.channel === "wechat" ? "微信" : "支付宝";
   const expiresAtMs = useMemo(() => new Date(order.expiresAt).getTime(), [order.expiresAt]);
+
+  useEffect(() => {
+    if (paid) {
+      window.location.assign("/my-courses");
+    }
+  }, [paid]);
 
   const checkOrderStatus = useCallback(async () => {
     setChecking(true);
@@ -63,15 +67,12 @@ export function OrderResult({ initialOrder }: { initialOrder: OrderView }) {
 
       setOrder(result.data);
 
-      if (result.data.status === "paid") {
-        router.push("/my-courses");
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "检查支付状态失败");
     } finally {
       setChecking(false);
     }
-  }, [order.orderId, router]);
+  }, [order.orderId]);
 
   useEffect(() => {
     let active = true;
