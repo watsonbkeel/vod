@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { canUseMockPayments } from "@/lib/payments/mock";
 import { confirmWeifutongPaidPayload } from "@/lib/payments/weifutong/confirm";
+import { parseWeifutongNotificationPayload } from "@/lib/payments/weifutong/notify";
 
 const basePaidPayload = {
   status: "0",
@@ -76,5 +77,34 @@ describe("Weifutong payment confirmation", () => {
     });
 
     assert.deepEqual(confirmation, { ok: false, error: "威富通结果缺少支付成功状态" });
+  });
+});
+
+describe("Weifutong notification parsing", () => {
+  it("accepts XML callbacks", async () => {
+    const request = new Request("https://v.bkeel.com/api/payments/weifutong/notify", {
+      method: "POST",
+      headers: { "Content-Type": "text/xml" },
+      body: "<xml><status>0</status><out_trade_no><![CDATA[VOD123]]></out_trade_no><total_fee>199900</total_fee></xml>",
+    });
+
+    assert.deepEqual(await parseWeifutongNotificationPayload(request), {
+      status: "0",
+      out_trade_no: "VOD123",
+      total_fee: "199900",
+    });
+  });
+
+  it("accepts URL-encoded callbacks even when the content type is missing", async () => {
+    const request = new Request("https://v.bkeel.com/api/payments/weifutong/notify", {
+      method: "POST",
+      body: "status=0&out_trade_no=VOD123&total_fee=199900",
+    });
+
+    assert.deepEqual(await parseWeifutongNotificationPayload(request), {
+      status: "0",
+      out_trade_no: "VOD123",
+      total_fee: "199900",
+    });
   });
 });

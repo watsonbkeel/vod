@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/db";
 import { ensurePurchaseEntitlement } from "@/lib/entitlements";
 import { confirmWeifutongPaidPayload } from "@/lib/payments/weifutong/confirm";
+import { parseWeifutongNotificationPayload } from "@/lib/payments/weifutong/notify";
 import { verifyWeifutongSignature } from "@/lib/payments/weifutong/sign";
 
 export async function POST(request: Request) {
-  const formData = await request.formData();
-  const payload = Object.fromEntries(Array.from(formData.entries()).map(([key, value]) => [key, String(value)]));
+  const payload = await parseWeifutongNotificationPayload(request);
   const signatureValid = verifyWeifutongSignature(payload);
   const merchantOrderNo = payload.out_trade_no || payload.outTradeNo || payload.merchantOrderNo;
 
