@@ -5,6 +5,7 @@ import { getUserId } from "@/lib/auth/user";
 import { prisma } from "@/lib/db";
 import { playableLessonWhere } from "@/lib/lessons/playable";
 import { getOrderExpiresAt, isOrderExpired } from "@/lib/orders";
+import { SITE_BRAND } from "@/lib/site-content";
 
 function formatAmount(amountCents: number) {
   return `HK$${(amountCents / 100).toFixed(2)}`;
@@ -51,10 +52,12 @@ export default async function MyCoursesPage() {
       <SiteHeader />
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
         <h1 className="text-4xl font-bold tracking-tight text-slate-950">我的课程</h1>
-        <p className="mt-4 text-slate-600">这里会展示已购买或后台赠送的课程、到期时间和学习进度。</p>
+        <p className="mt-4 text-slate-600">这里会展示已购买或后台开通的课程、到期时间和学习入口。学习中遇到支付或播放问题，可邮件联系 {SITE_BRAND.supportEmail}。</p>
         <div className="mt-8 grid gap-4">
           {!user || user.entitlements.length === 0 ? (
-            <div className="rounded-3xl bg-white p-8 text-center text-slate-500 shadow-sm ring-1 ring-slate-200">暂无已开通课程</div>
+            <div className="rounded-3xl bg-white p-8 text-center text-slate-500 shadow-sm ring-1 ring-slate-200">
+              暂无已开通课程。你可以先到课程中心查看 AI 小程序项目课，购买成功后会自动出现在这里。
+            </div>
           ) : (
             user.entitlements.map((entitlement) => {
               const lessonCount = entitlement.course.lessons.length;

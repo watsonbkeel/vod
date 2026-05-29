@@ -3,6 +3,7 @@
 import Link from "next/link";
 import QRCode from "qrcode";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { SITE_BRAND } from "@/lib/site-content";
 
 type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -159,7 +160,7 @@ export function OrderResult({ initialOrder }: { initialOrder: OrderView }) {
         </div>
         <div className="flex justify-between gap-4">
           <dt>金额</dt>
-          <dd className="font-medium text-slate-950">HK${(order.amountCents / 100).toFixed(2)}</dd>
+          <dd className="font-medium text-slate-950">¥{(order.amountCents / 100).toFixed(2)}</dd>
         </div>
       </dl>
       {paid ? (
@@ -190,7 +191,9 @@ export function OrderResult({ initialOrder }: { initialOrder: OrderView }) {
               </a>
             ) : null}
           </div>
-          <p className="text-center text-xs text-slate-500">支付成功后页面会自动跳转，无需手动刷新。</p>
+          <div className="rounded-2xl bg-white p-4 text-xs leading-5 text-slate-500 ring-1 ring-slate-200">
+            支付成功后页面会自动跳转到“我的课程”。如果二维码过期，请返回课程页重新发起支付；如已扣款但课程未开通，请保留订单号和支付截图，邮件联系 {SITE_BRAND.supportEmail}。
+          </div>
         </div>
       )}
       {error ? <p className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-600">{error}</p> : null}

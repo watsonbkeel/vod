@@ -1,19 +1,31 @@
+import Image from "next/image";
 import Link from "next/link";
+import { MAIN_COURSE } from "@/lib/site-content";
 
 export type CourseCardData = {
   title: string;
   slug: string;
+  coverUrl: string | null;
   summary: string;
+  priceCents: number;
   price: string;
   validity: string;
   lessonCount: number;
 };
 
 export function CourseCard({ course }: { course: CourseCardData }) {
+  const isMainCourse = course.slug === MAIN_COURSE.slug;
+
   return (
     <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
-      <div className="flex h-44 items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-800 px-8 text-center text-2xl font-semibold text-white">
-        {course.title}
+      <div className="relative flex h-48 items-center justify-center overflow-hidden bg-slate-900 px-8 text-center text-2xl font-semibold text-white">
+        {course.coverUrl ? (
+          <Image src={course.coverUrl} alt={`${course.title}封面`} fill sizes="(min-width: 768px) 50vw, 100vw" className="object-cover" />
+        ) : (
+          <span className="relative z-10">{course.title}</span>
+        )}
+        {course.coverUrl ? <div className="absolute inset-0 bg-gradient-to-t from-slate-950/45 to-transparent" /> : null}
+        {isMainCourse ? <span className="absolute left-4 top-4 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white">早鸟价</span> : null}
       </div>
       <div className="space-y-5 p-6">
         <div>
@@ -24,8 +36,11 @@ export function CourseCard({ course }: { course: CourseCardData }) {
           <span>{course.lessonCount} 个课时</span>
           <span>有效期 {course.validity}</span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-2xl font-semibold text-orange-600">{course.price}</span>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            {isMainCourse ? <p className="text-xs text-slate-400 line-through">正价 {MAIN_COURSE.regularPriceCents / 100} 元</p> : null}
+            <span className="text-2xl font-semibold text-orange-600">{isMainCourse ? `¥${MAIN_COURSE.earlyBirdPriceCents / 100}` : course.price}</span>
+          </div>
           <Link
             href={`/courses/${course.slug}`}
             className="rounded-full bg-slate-950 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"

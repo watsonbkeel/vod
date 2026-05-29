@@ -6,8 +6,10 @@ export type CourseListItem = {
   id: string;
   title: string;
   slug: string;
+  coverUrl: string | null;
   summary: string;
   description: string;
+  priceCents: number;
   price: string;
   validity: string;
   validityDays: number;
@@ -34,8 +36,10 @@ function toCourseListItem(course: Course & { _count: { lessons: number } }): Cou
     id: course.id,
     title: course.title,
     slug: course.slug,
+    coverUrl: course.coverUrl,
     summary: course.summary,
     description: course.description,
+    priceCents: course.priceCents,
     price: formatPrice(course.priceCents),
     validity: formatValidity(course.validityDays),
     validityDays: course.validityDays,

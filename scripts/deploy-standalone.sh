@@ -8,6 +8,8 @@ npm run build
 
 rm -rf .next/standalone/.next/static
 cp -a .next/static .next/standalone/.next/static
+rm -rf .next/standalone/public
+cp -a public .next/standalone/public
 
 systemctl restart vod
 systemctl is-active vod

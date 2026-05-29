@@ -64,6 +64,9 @@ export function PurchaseBox({ courseId, signedIn = false }: { courseId: string; 
       <button type="button" onClick={createOrder} disabled={loading} className="block w-full rounded-full bg-orange-600 px-6 py-3 text-center font-semibold text-white hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60">
         {loading ? "正在创建订单" : signedIn ? "立即购买" : "登录并购买"}
       </button>
+      <p className="text-xs leading-5 text-slate-500">
+        支付成功后自动开通课程权益。未观看付费课时前，7日内可按规则申请退款。
+      </p>
       {error ? <p className="rounded-2xl bg-red-50 p-4 text-sm text-red-600">{error}</p> : null}
     </div>
   );
