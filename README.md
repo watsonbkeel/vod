@@ -56,8 +56,42 @@ Open http://localhost:3000.
 npm run lint
 npx prisma validate
 npm run build
+npm run backup
 npm run db:studio
 ```
+
+## Backup and restore
+
+Backups include a PostgreSQL custom-format dump plus the local runtime/config files needed for disaster recovery (`.env`, Docker Compose files, Caddyfile, Prisma schema/migrations, package files, and deploy scripts). They are uploaded to Tencent COS.
+
+Required environment variables:
+
+- `TENCENT_SECRET_ID` / `TENCENT_SECRET_KEY`, or backup-specific `BACKUP_COS_SECRET_ID` / `BACKUP_COS_SECRET_KEY`
+- `BACKUP_COS_BUCKET`, defaults to `backup-1251741609`
+- `BACKUP_COS_REGION`, defaults to `ap-hongkong`
+- `BACKUP_COS_PREFIX`, defaults to `vod`
+- Optional `BACKUP_POSTGRES_CONTAINER`, defaults to auto-detecting `vod-local-postgres`
+
+Run a manual backup:
+
+```bash
+npm run backup
+```
+
+Install the nightly 00:10 cron job for this project:
+
+```bash
+npm run backup:install-cron
+```
+
+Restore is intentionally explicit because it rewrites the database:
+
+```bash
+npm run restore:backup -- --latest --download-only
+npm run restore:backup -- --latest --confirm
+```
+
+Use `--restore-config` to extract backed-up config files under `.backups/restores/<backup-id>/config` for inspection. The restore script does not overwrite live config files automatically.
 
 ## Current MVP status
 

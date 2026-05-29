@@ -184,17 +184,43 @@ const siteConfigSchema = z.object({
 
 export type SiteConfig = z.infer<typeof siteConfigSchema>;
 
+const LEGACY_PROMO_TEXT = "早鸟价 {price} 元，正价 {regularPrice} 元。购买后 {validityDays} 天内可反复观看。";
+
 function cloneDefaultConfig(): SiteConfig {
   return siteConfigSchema.parse(DEFAULT_SITE_CONFIG);
+}
+
+function applyCurrencyDefaults(config: SiteConfig): SiteConfig {
+  if (process.env.WEIFUTONG_CURRENCY?.toUpperCase() !== "HKD") {
+    return config;
+  }
+
+  return {
+    ...config,
+    global: {
+      ...config.global,
+      currencyPrefix: config.global.currencyPrefix === "¥" || config.global.currencyPrefix === "￥" ? "HK$" : config.global.currencyPrefix,
+      courseCardRegularPriceUnit: config.global.courseCardRegularPriceUnit === "元" ? "" : config.global.courseCardRegularPriceUnit,
+    },
+    courses: {
+      ...config.courses,
+      promoText: config.courses.promoText === LEGACY_PROMO_TEXT ? DEFAULT_SITE_CONFIG.courses.promoText : config.courses.promoText,
+    },
+    courseDetail: {
+      ...config.courseDetail,
+      priceLabel: config.courseDetail.priceLabel === "早鸟价" ? DEFAULT_SITE_CONFIG.courseDetail.priceLabel : config.courseDetail.priceLabel,
+      regularPriceLabel: config.courseDetail.regularPriceLabel === "正价" ? DEFAULT_SITE_CONFIG.courseDetail.regularPriceLabel : config.courseDetail.regularPriceLabel,
+    },
+  };
 }
 
 export async function getSiteSettings(): Promise<SiteConfig> {
   const content = await prisma.siteContent.findUnique({ where: { key: "site-config" } });
   const parsed = siteConfigSchema.safeParse(mergeSiteConfigWithDefaults(cloneDefaultConfig(), content?.metadata));
 
-  return parsed.success ? parsed.data : cloneDefaultConfig();
+  return applyCurrencyDefaults(parsed.success ? parsed.data : cloneDefaultConfig());
 }
 
 export function getDefaultSiteSettings(): SiteConfig {
-  return cloneDefaultConfig();
+  return applyCurrencyDefaults(cloneDefaultConfig());
 }

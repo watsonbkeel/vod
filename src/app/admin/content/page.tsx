@@ -58,7 +58,7 @@ export default async function AdminContentPage() {
             <TextInput label="Logo 图片路径" name="global.logo" value={config.global.logo} hint="建议 512 x 512 px 正方形，PNG/SVG 优先；页面实际显示约 34 x 34 px。" />
             <TextInput label="分享图路径" name="global.shareImage" value={config.global.shareImage} hint="建议 1200 x 630 px 横图，或 1024 x 1024 px 正方形；需公网可访问，不要使用会过期的签名 URL。" />
             <TextInput label="主课程 slug" name="global.mainCourseSlug" value={config.global.mainCourseSlug} />
-            <TextInput label="正价（分）" name="global.regularPriceCents" value={config.global.regularPriceCents} type="number" />
+            <TextInput label="默认原价（分，兼容旧模板）" name="global.regularPriceCents" value={config.global.regularPriceCents} type="number" />
             <TextInput label="适合年龄" name="global.ageRange" value={config.global.ageRange} />
             <TextInput label="服务形式" name="global.serviceModel" value={config.global.serviceModel} />
             <TextInput label="导航：首页" name="global.navHomeLabel" value={config.global.navHomeLabel} />
@@ -215,12 +215,12 @@ export default async function AdminContentPage() {
             <TextInput label="继续支付按钮" name="global.continuePayingLabel" value={config.global.continuePayingLabel} />
             <TextInput label="订单关闭标签" name="global.orderClosedLabel" value={config.global.orderClosedLabel} />
             <TextInput label="退出登录按钮" name="global.logoutLabel" value={config.global.logoutLabel} />
-            <TextInput label="金额符号" name="global.currencyPrefix" value={config.global.currencyPrefix} />
+            <TextInput label="金额前缀" name="global.currencyPrefix" value={config.global.currencyPrefix} hint="例如 HK$、HKD 或 ¥。如果输入 HKD，页面会自动在金额前缀和数字之间加空格。" />
             <TextInput label="课程卡片按钮" name="global.courseCardCtaLabel" value={config.global.courseCardCtaLabel} />
             <TextInput label="课程封面 alt 模板" name="global.courseCoverAltText" value={config.global.courseCoverAltText} />
             <TextInput label="课时单位" name="global.lessonCountUnitLabel" value={config.global.lessonCountUnitLabel} />
             <TextInput label="有效期前缀" name="global.validityLabelPrefix" value={config.global.validityLabelPrefix} />
-            <TextInput label="正价单位" name="global.courseCardRegularPriceUnit" value={config.global.courseCardRegularPriceUnit} />
+            <TextInput label="旧价格单位后缀" name="global.courseCardRegularPriceUnit" value={config.global.courseCardRegularPriceUnit} hint="兼容旧模板字段；新价格展示统一使用金额前缀，可留空。" />
             <TextInput label="支付方式名称" name="global.purchasePaymentLabel" value={config.global.purchasePaymentLabel} />
             <TextInput label="购买加载文案" name="global.purchaseLoadingLabel" value={config.global.purchaseLoadingLabel} />
             <TextInput label="已登录购买按钮" name="global.purchaseSignedInLabel" value={config.global.purchaseSignedInLabel} />

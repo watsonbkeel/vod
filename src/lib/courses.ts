@@ -1,6 +1,7 @@
 import type { Course, Lesson } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { playableLessonWhere } from "@/lib/lessons/playable";
+import { formatMoney } from "@/lib/money";
 
 export type CourseListItem = {
   id: string;
@@ -10,6 +11,8 @@ export type CourseListItem = {
   summary: string;
   description: string;
   priceCents: number;
+  regularPriceCents: number;
+  promoLabel: string;
   price: string;
   validity: string;
   validityDays: number;
@@ -21,10 +24,7 @@ export type CourseDetail = CourseListItem & {
 };
 
 export function formatPrice(priceCents: number) {
-  return `¥${(priceCents / 100).toLocaleString("zh-CN", {
-    minimumFractionDigits: Number.isInteger(priceCents / 100) ? 0 : 2,
-    maximumFractionDigits: 2,
-  })}`;
+  return formatMoney(priceCents);
 }
 
 export function formatValidity(validityDays: number) {
@@ -40,6 +40,8 @@ function toCourseListItem(course: Course & { _count: { lessons: number } }): Cou
     summary: course.summary,
     description: course.description,
     priceCents: course.priceCents,
+    regularPriceCents: course.regularPriceCents,
+    promoLabel: course.promoLabel,
     price: formatPrice(course.priceCents),
     validity: formatValidity(course.validityDays),
     validityDays: course.validityDays,

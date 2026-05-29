@@ -2,17 +2,22 @@ import Link from "next/link";
 import { AdminShell } from "@/components/admin-shell";
 import { requireAdminSession } from "@/lib/auth/admin";
 import { CourseForm } from "@/components/course-form";
-import { formatPrice, formatValidity } from "@/lib/courses";
+import { formatValidity } from "@/lib/courses";
 import { prisma } from "@/lib/db";
+import { formatMoney } from "@/lib/money";
+import { getSiteSettings } from "@/lib/site-settings";
 import { createCourse, deleteCourse } from "./actions";
 
 export default async function AdminCoursesPage() {
   await requireAdminSession();
 
-  const courses = await prisma.course.findMany({
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-    include: { _count: { select: { lessons: true } } },
-  });
+  const [courses, settings] = await Promise.all([
+    prisma.course.findMany({
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+      include: { _count: { select: { lessons: true } } },
+    }),
+    getSiteSettings(),
+  ]);
 
   return (
     <AdminShell title="课程管理">
@@ -34,7 +39,7 @@ export default async function AdminCoursesPage() {
                       <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">{course.status}</span>
                     </div>
                     <p className="mt-1 text-sm text-slate-500">
-                      {course._count.lessons} 课时 · {formatPrice(course.priceCents)} · 有效期 {formatValidity(course.validityDays)}
+                      {course._count.lessons} 课时 · {course.promoLabel} {formatMoney(course.priceCents, settings.global.currencyPrefix)} · 原价 {formatMoney(course.regularPriceCents, settings.global.currencyPrefix)} · 有效期 {formatValidity(course.validityDays)}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -53,7 +58,7 @@ export default async function AdminCoursesPage() {
         </div>
         <div>
           <h3 className="mb-3 text-lg font-semibold text-slate-950">新建课程</h3>
-          <CourseForm action={createCourse} submitLabel="创建课程" />
+          <CourseForm action={createCourse} submitLabel="创建课程" currencyPrefix={settings.global.currencyPrefix} />
         </div>
       </div>
     </AdminShell>

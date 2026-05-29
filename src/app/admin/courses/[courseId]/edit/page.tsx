@@ -6,6 +6,7 @@ import { CourseForm } from "@/components/course-form";
 import { LessonForm } from "@/components/lesson-form";
 import { LessonMediaForm } from "@/components/lesson-media-form";
 import { prisma } from "@/lib/db";
+import { getSiteSettings } from "@/lib/site-settings";
 import { createLesson, deleteLesson, updateCourse, updateLesson } from "../../actions";
 
 type EditCoursePageProps = {
@@ -16,10 +17,13 @@ export default async function EditCoursePage({ params }: EditCoursePageProps) {
   await requireAdminSession();
 
   const { courseId } = await params;
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    include: { lessons: { include: { mediaAsset: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
-  });
+  const [course, settings] = await Promise.all([
+    prisma.course.findUnique({
+      where: { id: courseId },
+      include: { lessons: { include: { mediaAsset: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
+    }),
+    getSiteSettings(),
+  ]);
 
   if (!course) {
     notFound();
@@ -29,7 +33,7 @@ export default async function EditCoursePage({ params }: EditCoursePageProps) {
     <AdminShell title="编辑课程">
       <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
         <div className="space-y-6">
-          <CourseForm action={updateCourse.bind(null, course.id)} course={course} submitLabel="保存课程" />
+          <CourseForm action={updateCourse.bind(null, course.id)} course={course} submitLabel="保存课程" currencyPrefix={settings.global.currencyPrefix} />
           <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <div className="flex items-center justify-between">
               <div>

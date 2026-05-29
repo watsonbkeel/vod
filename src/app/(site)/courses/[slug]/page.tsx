@@ -5,6 +5,7 @@ import { PurchaseBox } from "@/components/purchase-box";
 import { SiteHeader } from "@/components/site-header";
 import { getUserId } from "@/lib/auth/user";
 import { getPublishedCourseBySlug } from "@/lib/courses";
+import { formatMoney } from "@/lib/money";
 import { formatTemplate } from "@/lib/site-content";
 import { getSiteSettings } from "@/lib/site-settings";
 
@@ -26,6 +27,8 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
   }
   const detail = settings.courseDetail;
   const global = settings.global;
+  const salePrice = formatMoney(course.priceCents, global.currencyPrefix);
+  const regularPrice = formatMoney(course.regularPriceCents, global.currencyPrefix);
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -92,9 +95,9 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
         </div>
         <aside className="h-fit rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:sticky lg:top-24">
           <div className="rounded-2xl bg-gradient-to-br from-slate-950 to-cyan-800 p-6 text-white">
-            <p className="text-sm text-cyan-100">{detail.priceLabel}</p>
-            <p className="mt-2 text-4xl font-bold">¥{course.priceCents / 100}</p>
-            <p className="mt-2 text-sm text-slate-300 line-through">{detail.regularPriceLabel} ¥{global.regularPriceCents / 100}</p>
+            <p className="text-sm text-cyan-100">{course.promoLabel || detail.priceLabel}</p>
+            <p className="mt-2 text-4xl font-bold">{salePrice}</p>
+            <p className="mt-2 text-sm text-slate-300 line-through">{detail.regularPriceLabel} {regularPrice}</p>
             <p className="mt-3 text-sm text-slate-200">{detail.validityPrefix} {course.validity}</p>
           </div>
           <dl className="mt-6 space-y-3 text-sm text-slate-600">

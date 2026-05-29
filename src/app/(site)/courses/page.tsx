@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { CourseCard } from "@/components/course-card";
 import { SiteHeader } from "@/components/site-header";
 import { getPublishedCourses } from "@/lib/courses";
+import { formatMoney } from "@/lib/money";
 import { formatTemplate } from "@/lib/site-content";
 import { getSiteSettings } from "@/lib/site-settings";
 
@@ -10,8 +11,9 @@ export default async function CoursesPage() {
   const [courses, settings] = await Promise.all([getPublishedCourses(), getSiteSettings()]);
   const currentCourse = courses.find((course) => course.slug === settings.global.mainCourseSlug) ?? courses[0];
   const templateValues = {
-    price: currentCourse ? currentCourse.priceCents / 100 : 0,
-    regularPrice: settings.global.regularPriceCents / 100,
+    promoLabel: currentCourse?.promoLabel ?? settings.home.earlyBirdBadgeLabel,
+    price: currentCourse ? formatMoney(currentCourse.priceCents, settings.global.currencyPrefix) : formatMoney(0, settings.global.currencyPrefix),
+    regularPrice: currentCourse ? formatMoney(currentCourse.regularPriceCents, settings.global.currencyPrefix) : formatMoney(0, settings.global.currencyPrefix),
     validityDays: currentCourse?.validityDays ?? 365,
     serviceModel: settings.global.serviceModel,
   };

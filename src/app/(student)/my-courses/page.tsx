@@ -4,13 +4,10 @@ import { SiteHeader } from "@/components/site-header";
 import { getUserId } from "@/lib/auth/user";
 import { prisma } from "@/lib/db";
 import { playableLessonWhere } from "@/lib/lessons/playable";
+import { formatMoney } from "@/lib/money";
 import { getOrderExpiresAt, isOrderExpired } from "@/lib/orders";
 import { formatTemplate } from "@/lib/site-content";
 import { getSiteSettings } from "@/lib/site-settings";
-
-function formatAmount(amountCents: number, currencyPrefix: string) {
-  return `${currencyPrefix}${(amountCents / 100).toFixed(2)}`;
-}
 
 export default async function MyCoursesPage() {
   const userId = await getUserId();
@@ -90,7 +87,7 @@ export default async function MyCoursesPage() {
                     <div>
                       <p className="font-medium text-slate-950">{order.course.title}</p>
                       <p className="mt-1 text-slate-500">
-                        {formatAmount(order.amountCents, settings.global.currencyPrefix)} · {settings.global.purchasePaymentLabel} · {expired ? settings.global.orderExpiredText : `${settings.global.orderExpiresPrefix} ${getOrderExpiresAt(order).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`}
+                        {formatMoney(order.amountCents, settings.global.currencyPrefix)} · {settings.global.purchasePaymentLabel} · {expired ? settings.global.orderExpiredText : `${settings.global.orderExpiresPrefix} ${getOrderExpiresAt(order).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`}
                       </p>
                     </div>
                     {expired ? (

@@ -79,6 +79,8 @@ async function main() {
     summary: MAIN_COURSE.summary,
     description: MAIN_COURSE.description,
     priceCents: MAIN_COURSE.earlyBirdPriceCents,
+    regularPriceCents: MAIN_COURSE.regularPriceCents,
+    promoLabel: "早鸟价",
     validityDays: MAIN_COURSE.validityDays,
     status: "published" as const,
     sortOrder: 1,

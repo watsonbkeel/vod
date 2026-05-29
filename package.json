@@ -5,8 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "backup": "node scripts/backup-vod.cjs",
+    "backup:install-cron": "bash scripts/install-backup-cron.sh",
     "deploy:standalone": "bash scripts/deploy-standalone.sh",
     "start": "next start",
+    "restore:backup": "node scripts/restore-vod-backup.cjs",
     "lint": "eslint",
     "test": "node --import tsx --test tests/*.test.ts",
     "db:generate": "prisma generate",

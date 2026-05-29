@@ -1,15 +1,13 @@
 import { AdminShell } from "@/components/admin-shell";
 import { requireAdminSession } from "@/lib/auth/admin";
 import { prisma } from "@/lib/db";
-
-function formatAmount(amountCents: number) {
-  return `¥${(amountCents / 100).toFixed(2)}`;
-}
+import { formatMoney } from "@/lib/money";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export default async function AdminOrdersPage() {
   await requireAdminSession();
 
-  const [orders, callbacks] = await Promise.all([
+  const [orders, callbacks, settings] = await Promise.all([
     prisma.order.findMany({
       orderBy: { createdAt: "desc" },
       include: {
@@ -22,6 +20,7 @@ export default async function AdminOrdersPage() {
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
+    getSiteSettings(),
   ]);
 
   return (
@@ -54,7 +53,7 @@ export default async function AdminOrdersPage() {
                         <td className="whitespace-nowrap px-4 py-4 font-medium text-slate-950">{order.merchantOrderNo}</td>
                         <td className="whitespace-nowrap px-4 py-4">{order.user.phone}</td>
                         <td className="min-w-48 px-4 py-4">{order.course.title}</td>
-                        <td className="whitespace-nowrap px-4 py-4">{formatAmount(order.amountCents)}</td>
+                        <td className="whitespace-nowrap px-4 py-4">{formatMoney(order.amountCents, settings.global.currencyPrefix)}</td>
                         <td className="whitespace-nowrap px-4 py-4">
                           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">{order.status}</span>
                         </td>

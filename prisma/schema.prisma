@@ -107,22 +107,24 @@ model SiteContent {
 }
 
 model Course {
-  id              String              @id @default(cuid())
-  title           String
-  slug            String              @unique
-  coverUrl        String?
-  summary         String
-  description     String
-  priceCents      Int
-  validityDays    Int                 @default(365)
-  status          CourseStatus        @default(draft)
-  sortOrder       Int                 @default(0)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  lessons         Lesson[]
-  orders          Order[]
-  entitlements    CourseEntitlement[]
-  lessonProgress  LessonProgress[]
+  id                String              @id @default(cuid())
+  title             String
+  slug              String              @unique
+  coverUrl          String?
+  summary           String
+  description       String
+  priceCents        Int
+  regularPriceCents Int                 @default(99900)
+  promoLabel        String              @default("早鸟价")
+  validityDays      Int                 @default(365)
+  status            CourseStatus        @default(draft)
+  sortOrder         Int                 @default(0)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  lessons           Lesson[]
+  orders            Order[]
+  entitlements      CourseEntitlement[]
+  lessonProgress    LessonProgress[]
 
   @@index([status, sortOrder])
 }
@@ -162,22 +164,22 @@ model MediaAsset {
 }
 
 model Order {
-  id                  String         @id @default(cuid())
-  userId              String
-  user                User           @relation(fields: [userId], references: [id])
-  courseId            String
-  course              Course         @relation(fields: [courseId], references: [id])
-  merchantOrderNo     String         @unique
-  thirdPartyOrderNo   String?
-  channel             PaymentChannel
-  status              OrderStatus    @default(pending)
-  amountCents         Int
-  paymentCodeUrl      String?
-  paymentPayInfo      String?
-  paidAt              DateTime?
-  closedAt            DateTime?
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  id                String         @id @default(cuid())
+  userId            String
+  user              User           @relation(fields: [userId], references: [id])
+  courseId          String
+  course            Course         @relation(fields: [courseId], references: [id])
+  merchantOrderNo   String         @unique
+  thirdPartyOrderNo String?
+  channel           PaymentChannel
+  status            OrderStatus    @default(pending)
+  amountCents       Int
+  paymentCodeUrl    String?
+  paymentPayInfo    String?
+  paidAt            DateTime?
+  closedAt          DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   @@index([userId, status])
   @@index([courseId])

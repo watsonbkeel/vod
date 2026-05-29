@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { formatTemplate } from "@/lib/site-content";
+import { formatMoney } from "@/lib/money";
 import type { SiteConfig } from "@/lib/site-settings";
 
 export type CourseCardData = {
@@ -9,13 +10,17 @@ export type CourseCardData = {
   coverUrl: string | null;
   summary: string;
   priceCents: number;
+  regularPriceCents: number;
+  promoLabel: string;
   price: string;
   validity: string;
   lessonCount: number;
 };
 
 export function CourseCard({ course, settings }: { course: CourseCardData; settings: SiteConfig }) {
-  const isMainCourse = course.slug === settings.global.mainCourseSlug;
+  const hasPromotion = course.regularPriceCents > course.priceCents;
+  const salePrice = formatMoney(course.priceCents, settings.global.currencyPrefix);
+  const regularPrice = formatMoney(course.regularPriceCents, settings.global.currencyPrefix);
 
   return (
     <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
@@ -26,7 +31,7 @@ export function CourseCard({ course, settings }: { course: CourseCardData; setti
           <span className="relative z-10">{course.title}</span>
         )}
         {course.coverUrl ? <div className="absolute inset-0 bg-gradient-to-t from-slate-950/45 to-transparent" /> : null}
-        {isMainCourse ? <span className="absolute left-4 top-4 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white">{settings.home.earlyBirdBadgeLabel}</span> : null}
+        {hasPromotion ? <span className="absolute left-4 top-4 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white">{course.promoLabel}</span> : null}
       </div>
       <div className="space-y-5 p-6">
         <div>
@@ -39,8 +44,8 @@ export function CourseCard({ course, settings }: { course: CourseCardData; setti
         </div>
         <div className="flex items-center justify-between gap-3">
           <div>
-            {isMainCourse ? <p className="text-xs text-slate-400 line-through">{settings.home.regularPriceBadgeLabel} {settings.global.regularPriceCents / 100} {settings.global.courseCardRegularPriceUnit}</p> : null}
-            <span className="text-2xl font-semibold text-orange-600">{isMainCourse ? `${settings.global.currencyPrefix}${course.priceCents / 100}` : course.price}</span>
+            {hasPromotion ? <p className="text-xs text-slate-400 line-through">{settings.home.regularPriceBadgeLabel} {regularPrice}</p> : null}
+            <span className="text-2xl font-semibold text-orange-600">{salePrice}</span>
           </div>
           <Link
             href={`/courses/${course.slug}`}

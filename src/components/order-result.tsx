@@ -3,6 +3,7 @@
 import Link from "next/link";
 import QRCode from "qrcode";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { formatMoney } from "@/lib/money";
 import { formatTemplate } from "@/lib/site-content";
 import type { SiteConfig } from "@/lib/site-settings";
 
@@ -161,7 +162,7 @@ export function OrderResult({ initialOrder, settings }: { initialOrder: OrderVie
         </div>
         <div className="flex justify-between gap-4">
           <dt>{settings.orderAmountLabel}</dt>
-          <dd className="font-medium text-slate-950">{settings.currencyPrefix}{(order.amountCents / 100).toFixed(2)}</dd>
+          <dd className="font-medium text-slate-950">{formatMoney(order.amountCents, settings.currencyPrefix)}</dd>
         </div>
       </dl>
       {paid ? (

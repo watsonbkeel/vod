@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { CourseCard } from "@/components/course-card";
 import { SiteHeader } from "@/components/site-header";
 import { getPublishedCourses } from "@/lib/courses";
+import { formatMoney } from "@/lib/money";
 import { getSiteSettings } from "@/lib/site-settings";
 
 export default async function Home() {
@@ -15,6 +16,8 @@ export default async function Home() {
   const home = settings.home;
   const global = settings.global;
   const featuredCourse = courses[0];
+  const featuredSalePrice = featuredCourse ? formatMoney(featuredCourse.priceCents, global.currencyPrefix) : formatMoney(0, global.currencyPrefix);
+  const featuredRegularPrice = featuredCourse ? formatMoney(featuredCourse.regularPriceCents, global.currencyPrefix) : formatMoney(0, global.currencyPrefix);
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
       <SiteHeader />
@@ -53,8 +56,8 @@ export default async function Home() {
             </div>
             <div className="p-6">
               <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
-                <span className="rounded-full bg-orange-50 px-3 py-1 text-orange-700">{home.earlyBirdBadgeLabel} ¥{(featuredCourse?.priceCents ?? 0) / 100}</span>
-                <span className="rounded-full bg-slate-100 px-3 py-1 line-through">{home.regularPriceBadgeLabel} ¥{global.regularPriceCents / 100}</span>
+                <span className="rounded-full bg-orange-50 px-3 py-1 text-orange-700">{featuredCourse?.promoLabel ?? home.earlyBirdBadgeLabel} {featuredSalePrice}</span>
+                <span className="rounded-full bg-slate-100 px-3 py-1 line-through">{home.regularPriceBadgeLabel} {featuredRegularPrice}</span>
                 <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">{global.serviceModel}</span>
               </div>
               <h2 className="mt-4 text-2xl font-semibold">{featuredCourse?.title ?? home.title}</h2>
