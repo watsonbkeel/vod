@@ -3,11 +3,12 @@ import { requireAdminSession } from "@/lib/auth/admin";
 import { getSiteSettings } from "@/lib/site-settings";
 import { updateSiteConfig } from "./actions";
 
-function TextInput({ label, name, value, type = "text" }: { label: string; name: string; value: string | number; type?: string }) {
+function TextInput({ label, name, value, type = "text", hint }: { label: string; name: string; value: string | number; type?: string; hint?: string }) {
   return (
     <label className="block text-sm font-medium text-slate-700">
       {label}
       <input name={name} type={type} defaultValue={value} className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-cyan-600" />
+      {hint ? <span className="mt-1 block text-xs leading-5 text-slate-400">{hint}</span> : null}
     </label>
   );
 }
@@ -43,7 +44,7 @@ export default async function AdminContentPage() {
     <AdminShell title="站点内容">
       <form action={updateSiteConfig} className="space-y-6">
         <div className="rounded-3xl bg-cyan-50 p-5 text-sm leading-6 text-cyan-900 ring-1 ring-cyan-100">
-          这里管理前台可调整的标题、正文、按钮、图片路径、SEO、购买说明和课程详情模块。图片路径使用 `public` 下的 URL，例如 `/assets/images/brand/genwolian-ai-logo.png`。
+          这里管理前台可调整的标题、正文、按钮、图片路径、SEO、购买说明和课程详情模块。图片路径可使用 `public` 下的 URL，例如 `/assets/images/brand/genwolian-ai-logo.png`，也可使用公网可访问的 COS HTTPS URL。
         </div>
 
         <Section title="全站品牌、SEO 与导航">
@@ -54,8 +55,8 @@ export default async function AdminContentPage() {
             <TextInput label="讲师展示名" name="global.teacherDisplayName" value={config.global.teacherDisplayName} />
             <TextInput label="主体/版权主体" name="global.companyName" value={config.global.companyName} />
             <TextInput label="售后邮箱" name="global.supportEmail" value={config.global.supportEmail} />
-            <TextInput label="Logo 图片路径" name="global.logo" value={config.global.logo} />
-            <TextInput label="分享图路径" name="global.shareImage" value={config.global.shareImage} />
+            <TextInput label="Logo 图片路径" name="global.logo" value={config.global.logo} hint="建议 512 x 512 px 正方形，PNG/SVG 优先；页面实际显示约 34 x 34 px。" />
+            <TextInput label="分享图路径" name="global.shareImage" value={config.global.shareImage} hint="建议 1200 x 630 px 横图，或 1024 x 1024 px 正方形；需公网可访问，不要使用会过期的签名 URL。" />
             <TextInput label="主课程 slug" name="global.mainCourseSlug" value={config.global.mainCourseSlug} />
             <TextInput label="正价（分）" name="global.regularPriceCents" value={config.global.regularPriceCents} type="number" />
             <TextInput label="适合年龄" name="global.ageRange" value={config.global.ageRange} />
@@ -81,7 +82,7 @@ export default async function AdminContentPage() {
             <TextInput label="主按钮链接" name="home.primaryCtaHref" value={config.home.primaryCtaHref} />
             <TextInput label="次按钮文案" name="home.secondaryCtaLabel" value={config.home.secondaryCtaLabel} />
             <TextInput label="次按钮链接" name="home.secondaryCtaHref" value={config.home.secondaryCtaHref} />
-            <TextInput label="首屏图片路径" name="home.heroImage" value={config.home.heroImage} />
+            <TextInput label="首屏图片路径" name="home.heroImage" value={config.home.heroImage} hint="建议 1600 x 900 px，16:9 横图，主体居中，避免文字贴边。" />
             <TextInput label="首屏图片 alt" name="home.heroImageAlt" value={config.home.heroImageAlt} />
             <TextInput label="早鸟价标签" name="home.earlyBirdBadgeLabel" value={config.home.earlyBirdBadgeLabel} />
             <TextInput label="正价标签" name="home.regularPriceBadgeLabel" value={config.home.regularPriceBadgeLabel} />
@@ -104,7 +105,7 @@ export default async function AdminContentPage() {
           <div className="grid gap-4 lg:grid-cols-2">
             <TextInput label="老师模块标签" name="home.teacherLabel" value={config.home.teacherLabel} />
             <TextInput label="老师模块标题" name="home.teacherTitle" value={config.home.teacherTitle} />
-            <TextInput label="老师图片路径" name="home.teacherImage" value={config.home.teacherImage} />
+            <TextInput label="老师图片路径" name="home.teacherImage" value={config.home.teacherImage} hint="建议 1200 x 900 px，4:3 横图，适合授课照或工作照。" />
             <TextInput label="老师图片 alt" name="home.teacherImageAlt" value={config.home.teacherImageAlt} />
             <TextInput label="课程区标签" name="home.coursesEyebrow" value={config.home.coursesEyebrow} />
             <TextInput label="课程区标题" name="home.coursesTitle" value={config.home.coursesTitle} />
@@ -118,11 +119,11 @@ export default async function AdminContentPage() {
           <div className="grid gap-4 lg:grid-cols-2">
             <TextInput label="页面标签" name="about.eyebrow" value={config.about.eyebrow} />
             <TextInput label="页面标题" name="about.title" value={config.about.title} />
-            <TextInput label="头像路径" name="about.avatarImage" value={config.about.avatarImage} />
+            <TextInput label="头像路径" name="about.avatarImage" value={config.about.avatarImage} hint="建议 800 x 800 px 正方形头像，面部居中，背景干净。" />
             <TextInput label="头像 alt" name="about.avatarAlt" value={config.about.avatarAlt} />
             <TextInput label="证书模块标签" name="about.certificateEyebrow" value={config.about.certificateEyebrow} />
             <TextInput label="证书模块标题" name="about.certificateTitle" value={config.about.certificateTitle} />
-            <TextInput label="证书图片路径" name="about.certificateImage" value={config.about.certificateImage} />
+            <TextInput label="证书图片路径" name="about.certificateImage" value={config.about.certificateImage} hint="建议宽度不低于 1600 px，保持原证书比例，文字需要清晰可辨。" />
             <TextInput label="证书图片 alt" name="about.certificateAlt" value={config.about.certificateAlt} />
           </div>
           <TextArea label="关于正文" name="about.content" value={config.about.content} rows={6} />
