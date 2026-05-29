@@ -9,7 +9,7 @@ import { canUseWeifutong, createWeifutongOrder } from "@/lib/payments/weifutong/
 
 const orderSchema = z.object({
   courseId: z.string().trim().min(1),
-  channel: z.enum(["wechat", "alipay"]).default("wechat"),
+  channel: z.literal("alipay").default("alipay"),
 });
 
 function getNotifyUrl() {
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
       userId,
       courseId: course.id,
       merchantOrderNo: `VOD${Date.now()}${nanoid(6)}`,
-      channel: body.channel,
+      channel: "alipay",
       amountCents: course.priceCents,
       status: "pending",
     },
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
   try {
     if (useWeifutong) {
       payment = await createWeifutongOrder({
-          channel: body.channel,
+          channel: "alipay",
           merchantOrderNo: order.merchantOrderNo,
           body: course.title,
           amountCents: order.amountCents,
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
     const message = err instanceof Error ? err.message : "创建支付订单失败";
 
     if (message.includes("has not opened") || message.includes("payment type")) {
-      return jsonError("当前威富通商户未开通所选支付产品，请先在威富通后台开通，或配置 WEIFUTONG_WECHAT_SERVICE/WEIFUTONG_ALIPAY_SERVICE 为商户已开通的 service。", 400);
+      return jsonError("当前威富通商户未开通支付宝支付产品，请先在威富通后台开通，或配置 WEIFUTONG_ALIPAY_SERVICE 为商户已开通的 service。", 400);
     }
 
     return jsonError(message, 502);

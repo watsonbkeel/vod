@@ -2,8 +2,9 @@ import "dotenv/config";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { HOME_CONTENT, LESSON_CONTENT, MAIN_COURSE, TEACHER_CONTENT } from "../src/lib/site-content";
+import { DEFAULT_SITE_CONFIG, LESSON_CONTENT, MAIN_COURSE, mergeSiteConfigWithDefaults } from "../src/lib/site-content";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -22,20 +23,20 @@ async function main() {
   await prisma.siteContent.upsert({
     where: { key: "home" },
     update: {
-      title: HOME_CONTENT.title,
-      content: HOME_CONTENT.description,
+      title: DEFAULT_SITE_CONFIG.home.title,
+      content: DEFAULT_SITE_CONFIG.home.content,
       metadata: {
-        heroTitle: HOME_CONTENT.title,
-        heroSubtitle: HOME_CONTENT.description,
+        heroTitle: DEFAULT_SITE_CONFIG.home.title,
+        heroSubtitle: DEFAULT_SITE_CONFIG.home.content,
       },
     },
     create: {
       key: "home",
-      title: HOME_CONTENT.title,
-      content: HOME_CONTENT.description,
+      title: DEFAULT_SITE_CONFIG.home.title,
+      content: DEFAULT_SITE_CONFIG.home.content,
       metadata: {
-        heroTitle: HOME_CONTENT.title,
-        heroSubtitle: HOME_CONTENT.description,
+        heroTitle: DEFAULT_SITE_CONFIG.home.title,
+        heroSubtitle: DEFAULT_SITE_CONFIG.home.content,
       },
     },
   });
@@ -43,13 +44,30 @@ async function main() {
   await prisma.siteContent.upsert({
     where: { key: "about" },
     update: {
-      title: TEACHER_CONTENT.title,
-      content: TEACHER_CONTENT.intro,
+      title: DEFAULT_SITE_CONFIG.about.title,
+      content: DEFAULT_SITE_CONFIG.about.content,
     },
     create: {
       key: "about",
-      title: TEACHER_CONTENT.title,
-      content: TEACHER_CONTENT.intro,
+      title: DEFAULT_SITE_CONFIG.about.title,
+      content: DEFAULT_SITE_CONFIG.about.content,
+    },
+  });
+  const existingSiteConfig = await prisma.siteContent.findUnique({ where: { key: "site-config" } });
+  const siteConfig = mergeSiteConfigWithDefaults(DEFAULT_SITE_CONFIG, existingSiteConfig?.metadata) as Prisma.InputJsonValue;
+
+  await prisma.siteContent.upsert({
+    where: { key: "site-config" },
+    update: {
+      title: DEFAULT_SITE_CONFIG.global.siteTitle,
+      content: DEFAULT_SITE_CONFIG.global.siteDescription,
+      metadata: siteConfig,
+    },
+    create: {
+      key: "site-config",
+      title: DEFAULT_SITE_CONFIG.global.siteTitle,
+      content: DEFAULT_SITE_CONFIG.global.siteDescription,
+      metadata: siteConfig,
     },
   });
   const existingMainCourse = await prisma.course.findUnique({ where: { slug: MAIN_COURSE.slug } });

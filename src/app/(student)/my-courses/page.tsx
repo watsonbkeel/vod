@@ -5,10 +5,11 @@ import { getUserId } from "@/lib/auth/user";
 import { prisma } from "@/lib/db";
 import { playableLessonWhere } from "@/lib/lessons/playable";
 import { getOrderExpiresAt, isOrderExpired } from "@/lib/orders";
-import { SITE_BRAND } from "@/lib/site-content";
+import { formatTemplate } from "@/lib/site-content";
+import { getSiteSettings } from "@/lib/site-settings";
 
-function formatAmount(amountCents: number) {
-  return `HK$${(amountCents / 100).toFixed(2)}`;
+function formatAmount(amountCents: number, currencyPrefix: string) {
+  return `${currencyPrefix}${(amountCents / 100).toFixed(2)}`;
 }
 
 export default async function MyCoursesPage() {
@@ -18,7 +19,7 @@ export default async function MyCoursesPage() {
     redirect("/login");
   }
 
-  const [user, recentOrders] = await Promise.all([
+  const [user, recentOrders, settings] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -40,23 +41,24 @@ export default async function MyCoursesPage() {
       },
     }),
     prisma.order.findMany({
-      where: { userId, status: { in: ["pending", "closed"] } },
+      where: { userId, channel: "alipay", status: { in: ["pending", "closed"] } },
       include: { course: { select: { title: true } } },
       orderBy: { createdAt: "desc" },
       take: 10,
     }),
+    getSiteSettings(),
   ]);
 
   return (
     <main className="min-h-screen bg-slate-50">
       <SiteHeader />
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <h1 className="text-4xl font-bold tracking-tight text-slate-950">我的课程</h1>
-        <p className="mt-4 text-slate-600">这里会展示已购买或后台开通的课程、到期时间和学习入口。学习中遇到支付或播放问题，可邮件联系 {SITE_BRAND.supportEmail}。</p>
+        <h1 className="text-4xl font-bold tracking-tight text-slate-950">{settings.global.myCoursesTitle}</h1>
+        <p className="mt-4 text-slate-600">{formatTemplate(settings.global.myCoursesIntro, { supportEmail: settings.global.supportEmail })}</p>
         <div className="mt-8 grid gap-4">
           {!user || user.entitlements.length === 0 ? (
             <div className="rounded-3xl bg-white p-8 text-center text-slate-500 shadow-sm ring-1 ring-slate-200">
-              暂无已开通课程。你可以先到课程中心查看 AI 小程序项目课，购买成功后会自动出现在这里。
+              {settings.global.myCoursesEmpty}
             </div>
           ) : (
             user.entitlements.map((entitlement) => {
@@ -66,11 +68,11 @@ export default async function MyCoursesPage() {
                   <div>
                     <h2 className="text-xl font-semibold text-slate-950">{entitlement.course.title}</h2>
                     <p className="mt-2 text-sm text-slate-500">
-                      有效期至：{entitlement.expiresAt.toLocaleDateString("zh-CN")} · 共 {lessonCount} 个可播放课时
+                      {settings.global.myCoursesValidityLabel}：{entitlement.expiresAt.toLocaleDateString("zh-CN")} · {settings.global.myCoursesLessonCountPrefix} {lessonCount} {settings.global.myCoursesPlayableLessonUnit}
                     </p>
                   </div>
                   <Link href={`/learn/${entitlement.course.id}`} className="rounded-full bg-slate-950 px-5 py-2 text-center text-sm font-medium text-white hover:bg-slate-800">
-                    继续学习
+                    {settings.global.continueLearningLabel}
                   </Link>
                 </div>
               );
@@ -79,7 +81,7 @@ export default async function MyCoursesPage() {
         </div>
         {recentOrders.length > 0 ? (
           <div className="mt-8 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <h2 className="text-xl font-semibold text-slate-950">订单</h2>
+            <h2 className="text-xl font-semibold text-slate-950">{settings.global.orderSectionTitle}</h2>
             <div className="mt-4 grid gap-3">
               {recentOrders.map((order) => {
                 const expired = order.status === "closed" || isOrderExpired(order);
@@ -88,14 +90,14 @@ export default async function MyCoursesPage() {
                     <div>
                       <p className="font-medium text-slate-950">{order.course.title}</p>
                       <p className="mt-1 text-slate-500">
-                        {formatAmount(order.amountCents)} · {order.channel === "wechat" ? "微信支付" : "支付宝"} · {expired ? "订单超时已关闭" : `有效期至 ${getOrderExpiresAt(order).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`}
+                        {formatAmount(order.amountCents, settings.global.currencyPrefix)} · {settings.global.purchasePaymentLabel} · {expired ? settings.global.orderExpiredText : `${settings.global.orderExpiresPrefix} ${getOrderExpiresAt(order).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`}
                       </p>
                     </div>
                     {expired ? (
-                      <span className="rounded-full bg-slate-200 px-4 py-2 text-center text-xs font-medium text-slate-500">已关闭</span>
+                      <span className="rounded-full bg-slate-200 px-4 py-2 text-center text-xs font-medium text-slate-500">{settings.global.orderClosedLabel}</span>
                     ) : (
                       <Link href={`/orders/${order.id}`} className="rounded-full bg-orange-600 px-5 py-2 text-center text-sm font-medium text-white hover:bg-orange-500">
-                        继续支付
+                        {settings.global.continuePayingLabel}
                       </Link>
                     )}
                   </div>

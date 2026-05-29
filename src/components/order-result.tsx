@@ -3,14 +3,15 @@
 import Link from "next/link";
 import QRCode from "qrcode";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { SITE_BRAND } from "@/lib/site-content";
+import { formatTemplate } from "@/lib/site-content";
+import type { SiteConfig } from "@/lib/site-settings";
 
 type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
 type OrderView = {
   orderId: string;
   merchantOrderNo: string;
-  channel: "wechat" | "alipay";
+  channel: "alipay";
   status: string;
   amountCents: number;
   paidAt: string | null;
@@ -37,7 +38,7 @@ function formatRemaining(ms: number) {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-export function OrderResult({ initialOrder }: { initialOrder: OrderView }) {
+export function OrderResult({ initialOrder, settings }: { initialOrder: OrderView; settings: SiteConfig["global"] }) {
   const [order, setOrder] = useState(initialOrder);
   const [error, setError] = useState("");
   const [qrCode, setQrCode] = useState("");
@@ -46,7 +47,7 @@ export function OrderResult({ initialOrder }: { initialOrder: OrderView }) {
   const [remainingMs, setRemainingMs] = useState(() => new Date(initialOrder.expiresAt).getTime() - Date.now());
   const paid = order.status === "paid";
   const closed = order.status === "closed";
-  const paymentLabel = order.channel === "wechat" ? "微信" : "支付宝";
+  const paymentLabel = settings.purchasePaymentLabel;
   const expiresAtMs = useMemo(() => new Date(order.expiresAt).getTime(), [order.expiresAt]);
 
   useEffect(() => {
@@ -63,17 +64,17 @@ export function OrderResult({ initialOrder }: { initialOrder: OrderView }) {
       const result = (await response.json()) as ApiResult<OrderView>;
 
       if (!response.ok || !result.ok) {
-        throw new Error(result?.ok === false ? result.error : "检查支付状态失败");
+        throw new Error(result?.ok === false ? result.error : settings.orderStatusCheckError);
       }
 
       setOrder(result.data);
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : "检查支付状态失败");
+      setError(err instanceof Error ? err.message : settings.orderStatusCheckError);
     } finally {
       setChecking(false);
     }
-  }, [order.orderId]);
+  }, [order.orderId, settings.orderStatusCheckError]);
 
   useEffect(() => {
     let active = true;
@@ -90,7 +91,7 @@ export function OrderResult({ initialOrder }: { initialOrder: OrderView }) {
         const result = (await response.json()) as ApiResult<PaymentQrResponse>;
 
         if (!response.ok || !result.ok) {
-          throw new Error(result?.ok === false ? result.error : "获取支付二维码失败");
+          throw new Error(result?.ok === false ? result.error : settings.orderQrLoadError);
         }
 
         if (!active) return;
@@ -105,7 +106,7 @@ export function OrderResult({ initialOrder }: { initialOrder: OrderView }) {
           setQrCode("");
         }
       } catch (err) {
-        if (active) setError(err instanceof Error ? err.message : "获取支付二维码失败");
+        if (active) setError(err instanceof Error ? err.message : settings.orderQrLoadError);
       }
     }
 
@@ -114,7 +115,7 @@ export function OrderResult({ initialOrder }: { initialOrder: OrderView }) {
     return () => {
       active = false;
     };
-  }, [order.orderId, order.status]);
+  }, [order.orderId, order.status, settings.orderQrLoadError]);
 
   useEffect(() => {
     if (order.status !== "pending") return;
@@ -143,56 +144,56 @@ export function OrderResult({ initialOrder }: { initialOrder: OrderView }) {
 
   return (
     <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-      <p className="text-sm font-medium text-cyan-700">订单支付</p>
-      <h1 className="mt-3 text-3xl font-semibold text-slate-950">{paid ? "支付成功" : closed ? "订单已关闭" : "待支付"}</h1>
+      <p className="text-sm font-medium text-cyan-700">{settings.orderPageEyebrow}</p>
+      <h1 className="mt-3 text-3xl font-semibold text-slate-950">{paid ? settings.orderPaidTitle : closed ? settings.orderClosedTitle : settings.orderPendingTitle}</h1>
       <dl className="mt-6 space-y-3 text-sm text-slate-600">
         <div className="flex justify-between gap-4">
-          <dt>课程</dt>
+          <dt>{settings.orderCourseLabel}</dt>
           <dd className="text-right font-medium text-slate-950">{order.course.title}</dd>
         </div>
         <div className="flex justify-between gap-4">
-          <dt>订单号</dt>
+          <dt>{settings.orderNoLabel}</dt>
           <dd className="text-right font-medium text-slate-950">{order.merchantOrderNo}</dd>
         </div>
         <div className="flex justify-between gap-4">
-          <dt>支付方式</dt>
-          <dd className="font-medium text-slate-950">{paymentLabel}支付</dd>
+          <dt>{settings.orderPaymentMethodLabel}</dt>
+          <dd className="font-medium text-slate-950">{paymentLabel}{settings.orderPaymentSuffix}</dd>
         </div>
         <div className="flex justify-between gap-4">
-          <dt>金额</dt>
-          <dd className="font-medium text-slate-950">¥{(order.amountCents / 100).toFixed(2)}</dd>
+          <dt>{settings.orderAmountLabel}</dt>
+          <dd className="font-medium text-slate-950">{settings.currencyPrefix}{(order.amountCents / 100).toFixed(2)}</dd>
         </div>
       </dl>
       {paid ? (
         <div className="mt-8 rounded-2xl bg-emerald-50 p-5 text-center text-sm text-emerald-700">
-          支付成功，正在进入我的课程...
+          {settings.orderPaidRedirectText}
         </div>
       ) : closed ? (
         <div className="mt-8 space-y-4">
-          <div className="rounded-2xl bg-slate-50 p-5 text-center text-sm text-slate-600">订单超时已关闭，请返回课程页重新购买。</div>
+          <div className="rounded-2xl bg-slate-50 p-5 text-center text-sm text-slate-600">{settings.orderClosedHelpText}</div>
           <Link href={`/courses/${order.course.slug}`} className="block rounded-full bg-slate-950 px-6 py-3 text-center font-semibold text-white hover:bg-slate-800">
-            重新购买
+            {settings.orderRepurchaseLabel}
           </Link>
         </div>
       ) : (
         <div className="mt-8 space-y-4">
           <div className="rounded-3xl bg-slate-50 p-6 text-center text-sm text-slate-600">
-            <p className="font-medium text-slate-950">请使用{paymentLabel}扫码支付</p>
+            <p className="font-medium text-slate-950">{formatTemplate(settings.orderScanText, { paymentLabel })}</p>
             <div className="mx-auto mt-5 flex h-72 w-72 items-center justify-center rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-              {qrCode ? <picture><img src={qrCode} alt="支付二维码" className="h-62 w-62" /></picture> : <span className="text-slate-400">正在生成二维码...</span>}
+              {qrCode ? <picture><img src={qrCode} alt={settings.orderQrAlt} className="h-62 w-62" /></picture> : <span className="text-slate-400">{settings.orderQrLoadingText}</span>}
             </div>
-            <p className="mt-4 text-xs text-slate-500">剩余支付时间 {formatRemaining(remainingMs)}</p>
+            <p className="mt-4 text-xs text-slate-500">{settings.orderRemainingPrefix} {formatRemaining(remainingMs)}</p>
             <button type="button" onClick={checkOrderStatus} disabled={checking} className="mt-4 rounded-full bg-slate-950 px-5 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">
-              {checking ? "正在检查" : "检查支付状态"}
+              {checking ? settings.orderCheckingLabel : settings.orderCheckLabel}
             </button>
             {fallbackUrl ? (
               <a href={fallbackUrl} target="_blank" rel="noreferrer" className="mt-3 inline-block text-xs text-slate-400 underline underline-offset-2">
-                二维码无法识别时打开备用支付链接
+                {settings.orderFallbackLinkLabel}
               </a>
             ) : null}
           </div>
           <div className="rounded-2xl bg-white p-4 text-xs leading-5 text-slate-500 ring-1 ring-slate-200">
-            支付成功后页面会自动跳转到“我的课程”。如果二维码过期，请返回课程页重新发起支付；如已扣款但课程未开通，请保留订单号和支付截图，邮件联系 {SITE_BRAND.supportEmail}。
+            {formatTemplate(settings.orderHelpText, { supportEmail: settings.supportEmail })}
           </div>
         </div>
       )}

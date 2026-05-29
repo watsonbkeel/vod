@@ -14,15 +14,15 @@ export async function POST(request: Request) {
   }
 
   const { service } = await request.json().catch(() => ({ service: "" }));
-  const previous = process.env.WEIFUTONG_WECHAT_SERVICE;
+  const previous = process.env.WEIFUTONG_ALIPAY_SERVICE;
 
   try {
     if (typeof service === "string" && service) {
-      process.env.WEIFUTONG_WECHAT_SERVICE = service;
+      process.env.WEIFUTONG_ALIPAY_SERVICE = service;
     }
 
     const payment = await createWeifutongOrder({
-      channel: "wechat",
+      channel: "alipay",
       merchantOrderNo: `DEBUG${Date.now()}`,
       body: "VOD支付调试",
       amountCents: 1,
@@ -35,6 +35,6 @@ export async function POST(request: Request) {
   } catch (err) {
     return jsonError(err instanceof Error ? err.message : "支付调试失败", 400);
   } finally {
-    process.env.WEIFUTONG_WECHAT_SERVICE = previous;
+    process.env.WEIFUTONG_ALIPAY_SERVICE = previous;
   }
 }

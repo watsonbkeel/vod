@@ -1,6 +1,6 @@
 import { parseWeifutongXml, postWeifutongXml } from "./xml";
 
-type WeifutongChannel = "wechat" | "alipay";
+type WeifutongChannel = "alipay";
 
 type WeifutongOrderInput = {
   channel: WeifutongChannel;
@@ -21,15 +21,12 @@ export type WeifutongOrderPayment = {
   raw: Record<string, string>;
 };
 
-function getWeifutongService(channel: WeifutongChannel) {
-  const defaultService = channel === "wechat" ? "pay.weixin.native" : "pay.alipay.native.intl";
-  const envValue = channel === "wechat" ? process.env.WEIFUTONG_WECHAT_SERVICE : process.env.WEIFUTONG_ALIPAY_SERVICE;
-
-  return envValue || defaultService;
+function getWeifutongService() {
+  return process.env.WEIFUTONG_ALIPAY_SERVICE || "pay.alipay.native.intl";
 }
 
-function getWeifutongPaymentInst(channel: WeifutongChannel) {
-  if (channel !== "alipay" || process.env.WEIFUTONG_CURRENCY !== "HKD") {
+function getWeifutongPaymentInst() {
+  if (process.env.WEIFUTONG_CURRENCY !== "HKD") {
     return "";
   }
 
@@ -49,7 +46,7 @@ export async function createWeifutongOrder(input: WeifutongOrderInput): Promise<
   }
 
   const payload: Record<string, string> = {
-    service: getWeifutongService(input.channel),
+    service: getWeifutongService(),
     version: "2.0",
     charset: "UTF-8",
     sign_type: "MD5",
@@ -63,7 +60,7 @@ export async function createWeifutongOrder(input: WeifutongOrderInput): Promise<
     callback_url: input.callbackUrl,
     nonce_str: crypto.randomUUID().replaceAll("-", ""),
   };
-  const paymentInst = getWeifutongPaymentInst(input.channel);
+  const paymentInst = getWeifutongPaymentInst();
 
   if (paymentInst) {
     payload.payment_inst = paymentInst;
