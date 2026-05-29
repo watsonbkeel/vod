@@ -21,18 +21,18 @@ export default async function Home() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
       <SiteHeader />
-      <section className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:py-18">
+      <section className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:py-18">
         <div className="flex flex-col justify-center">
-          <span className="mb-5 w-fit rounded-full bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 ring-1 ring-emerald-100">
+          <span className="mb-4 w-fit rounded-full bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 ring-1 ring-emerald-100 sm:mb-5">
             {home.eyebrow}
           </span>
-          <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-slate-950 sm:text-6xl">
+          <h1 className="max-w-3xl text-3xl font-bold leading-tight tracking-tight text-slate-950 sm:text-6xl">
             {home.title}
           </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
+          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:mt-6 sm:text-lg sm:leading-8">
             {home.content}
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row">
             <Link href={home.primaryCtaHref} className="rounded-full bg-slate-950 px-6 py-3 text-center font-medium text-white hover:bg-slate-800">
               {home.primaryCtaLabel}
             </Link>
@@ -40,41 +40,41 @@ export default async function Home() {
               {home.secondaryCtaLabel}
             </Link>
           </div>
-          <div className="mt-10 grid gap-4 sm:grid-cols-3">
-            {home.features.map((feature) => (
-              <div key={feature.title} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-                <h3 className="font-semibold text-slate-950">{feature.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-500">{feature.description}</p>
-              </div>
-            ))}
-          </div>
         </div>
         <div className="grid gap-4">
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
-            <div className="relative aspect-[4/3] bg-slate-900">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl sm:rounded-3xl">
+            <div className="relative aspect-[4/3] bg-slate-900 sm:aspect-[4/3]">
               <Image src={home.heroImage} alt={home.heroImageAlt} fill priority sizes="(min-width: 1024px) 42vw, 100vw" className="object-cover" />
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
                 <span className="rounded-full bg-orange-50 px-3 py-1 text-orange-700">{featuredCourse?.promoLabel ?? home.earlyBirdBadgeLabel} {featuredSalePrice}</span>
                 <span className="rounded-full bg-slate-100 px-3 py-1 line-through">{home.regularPriceBadgeLabel} {featuredRegularPrice}</span>
                 <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">{global.serviceModel}</span>
               </div>
-              <h2 className="mt-4 text-2xl font-semibold">{featuredCourse?.title ?? home.title}</h2>
+              <h2 className="mt-4 text-xl font-semibold sm:text-2xl">{featuredCourse?.title ?? home.title}</h2>
               <p className="mt-3 text-sm leading-6 text-slate-600">{featuredCourse?.summary ?? home.content}</p>
-              <div className="mt-5 grid grid-cols-3 gap-3 text-center text-sm">
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <strong className="block text-2xl text-slate-950">{featuredCourse?.lessonCount ?? 8}</strong>课时
+              <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs sm:gap-3 sm:text-sm">
+                <div className="rounded-2xl bg-slate-50 p-3 sm:p-4">
+                  <strong className="block text-xl text-slate-950 sm:text-2xl">{featuredCourse?.lessonCount ?? 8}</strong>课时
                 </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <strong className="block text-2xl text-slate-950">{featuredCourse?.validityDays ?? 365}</strong>天有效
+                <div className="rounded-2xl bg-slate-50 p-3 sm:p-4">
+                  <strong className="block text-xl text-slate-950 sm:text-2xl">{featuredCourse?.validityDays ?? 365}</strong>天有效
                 </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <strong className="block text-2xl text-slate-950">{global.ageRange}</strong>适合
+                <div className="rounded-2xl bg-slate-50 p-3 sm:p-4">
+                  <strong className="block text-xl text-slate-950 sm:text-2xl">{global.ageRange}</strong>适合
                 </div>
               </div>
             </div>
           </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3 lg:col-span-2">
+          {home.features.map((feature) => (
+            <div key={feature.title} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+              <h3 className="font-semibold text-slate-950">{feature.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-500">{feature.description}</p>
+            </div>
+          ))}
         </div>
       </section>
       <section className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">

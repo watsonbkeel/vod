@@ -144,9 +144,9 @@ export function OrderResult({ initialOrder, settings }: { initialOrder: OrderVie
   }, [order.status, checkOrderStatus]);
 
   return (
-    <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:rounded-3xl sm:p-8">
       <p className="text-sm font-medium text-cyan-700">{settings.orderPageEyebrow}</p>
-      <h1 className="mt-3 text-3xl font-semibold text-slate-950">{paid ? settings.orderPaidTitle : closed ? settings.orderClosedTitle : settings.orderPendingTitle}</h1>
+      <h1 className="mt-3 text-2xl font-semibold text-slate-950 sm:text-3xl">{paid ? settings.orderPaidTitle : closed ? settings.orderClosedTitle : settings.orderPendingTitle}</h1>
       <dl className="mt-6 space-y-3 text-sm text-slate-600">
         <div className="flex justify-between gap-4">
           <dt>{settings.orderCourseLabel}</dt>
@@ -154,7 +154,7 @@ export function OrderResult({ initialOrder, settings }: { initialOrder: OrderVie
         </div>
         <div className="flex justify-between gap-4">
           <dt>{settings.orderNoLabel}</dt>
-          <dd className="text-right font-medium text-slate-950">{order.merchantOrderNo}</dd>
+          <dd className="break-all text-right font-medium text-slate-950">{order.merchantOrderNo}</dd>
         </div>
         <div className="flex justify-between gap-4">
           <dt>{settings.orderPaymentMethodLabel}</dt>
@@ -178,10 +178,10 @@ export function OrderResult({ initialOrder, settings }: { initialOrder: OrderVie
         </div>
       ) : (
         <div className="mt-8 space-y-4">
-          <div className="rounded-3xl bg-slate-50 p-6 text-center text-sm text-slate-600">
+          <div className="rounded-2xl bg-slate-50 p-4 text-center text-sm text-slate-600 sm:rounded-3xl sm:p-6">
             <p className="font-medium text-slate-950">{formatTemplate(settings.orderScanText, { paymentLabel })}</p>
-            <div className="mx-auto mt-5 flex h-72 w-72 items-center justify-center rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-              {qrCode ? <picture><img src={qrCode} alt={settings.orderQrAlt} className="h-62 w-62" /></picture> : <span className="text-slate-400">{settings.orderQrLoadingText}</span>}
+            <div className="mx-auto mt-5 flex aspect-square w-full max-w-72 items-center justify-center rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:rounded-3xl">
+              {qrCode ? <picture><img src={qrCode} alt={settings.orderQrAlt} className="h-full w-full" /></picture> : <span className="text-slate-400">{settings.orderQrLoadingText}</span>}
             </div>
             <p className="mt-4 text-xs text-slate-500">{settings.orderRemainingPrefix} {formatRemaining(remainingMs)}</p>
             <button type="button" onClick={checkOrderStatus} disabled={checking} className="mt-4 rounded-full bg-slate-950 px-5 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">

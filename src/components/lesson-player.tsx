@@ -77,8 +77,8 @@ export function LessonPlayer({ courseTitle, lessons }: { courseTitle: string; le
   }
 
   return (
-    <section className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_360px]">
-      <div className="overflow-hidden rounded-3xl bg-black shadow-2xl ring-1 ring-white/10">
+    <section className="mx-auto grid max-w-7xl gap-5 px-4 py-6 sm:px-6 sm:py-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-6">
+      <div className="min-w-0 overflow-hidden rounded-2xl bg-black shadow-2xl ring-1 ring-white/10 sm:rounded-3xl">
         <div className="flex aspect-video items-center justify-center bg-slate-900 text-slate-400">
           {loading ? (
             "正在获取播放地址..."
@@ -103,14 +103,14 @@ export function LessonPlayer({ courseTitle, lessons }: { courseTitle: string; le
             error || "暂无可播放课时"
           )}
         </div>
-        <div className="border-t border-white/10 p-6">
+        <div className="border-t border-white/10 p-5 sm:p-6">
           <p className="text-sm text-cyan-300">{selectedLesson ? `第 ${selectedLesson.sortOrder} 课` : "暂无课时"}</p>
-          <h1 className="mt-2 text-2xl font-semibold">{selectedLesson?.title ?? courseTitle}</h1>
+          <h1 className="mt-2 text-xl font-semibold sm:text-2xl">{selectedLesson?.title ?? courseTitle}</h1>
           <p className="mt-3 text-sm leading-6 text-slate-300">当前进度：{currentProgress.positionSec}s · {currentProgress.completed ? "已完成" : "学习中"}</p>
           {error ? <p className="mt-3 rounded-2xl bg-red-500/10 p-4 text-sm text-red-200">{error}</p> : null}
         </div>
       </div>
-      <aside className="rounded-3xl bg-white p-5 text-slate-950 shadow-xl">
+      <aside className="rounded-2xl bg-white p-4 text-slate-950 shadow-xl sm:rounded-3xl sm:p-5">
         <h2 className="text-lg font-semibold">课时目录</h2>
         <div className="mt-4 space-y-2">
           {lessons.length === 0 ? (
@@ -121,8 +121,8 @@ export function LessonPlayer({ courseTitle, lessons }: { courseTitle: string; le
               return (
                 <button key={lesson.id} onClick={() => setSelectedLessonId(lesson.id)} className={`flex w-full items-center gap-3 rounded-2xl p-3 text-left text-sm ${lesson.id === selectedLessonId ? "bg-slate-950 text-white" : "hover:bg-slate-50"}`}>
                   <span className={`flex h-8 w-8 items-center justify-center rounded-full font-medium ${lesson.id === selectedLessonId ? "bg-white/10 text-white" : "bg-slate-100 text-slate-600"}`}>{index + 1}</span>
-                  <span>{lesson.title}</span>
-                  <span className={`ml-auto text-xs ${lesson.id === selectedLessonId ? "text-slate-300" : "text-slate-400"}`}>
+                  <span className="min-w-0 flex-1">{lesson.title}</span>
+                  <span className={`shrink-0 text-xs ${lesson.id === selectedLessonId ? "text-slate-300" : "text-slate-400"}`}>
                     {progress.completed ? "已完成" : progress.positionSec > 0 ? `已学 ${progress.positionSec}s` : "未学习"}
                   </span>
                 </button>

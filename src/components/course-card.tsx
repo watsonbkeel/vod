@@ -38,18 +38,18 @@ export function CourseCard({ course, settings }: { course: CourseCardData; setti
           <h3 className="text-xl font-semibold text-slate-950">{course.title}</h3>
           <p className="mt-2 text-sm leading-6 text-slate-600">{course.summary}</p>
         </div>
-        <div className="flex items-center justify-between text-sm text-slate-500">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
           <span>{course.lessonCount} {settings.global.lessonCountUnitLabel}</span>
           <span>{settings.global.validityLabelPrefix} {course.validity}</span>
         </div>
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             {hasPromotion ? <p className="text-xs text-slate-400 line-through">{settings.home.regularPriceBadgeLabel} {regularPrice}</p> : null}
             <span className="text-2xl font-semibold text-orange-600">{salePrice}</span>
           </div>
           <Link
             href={`/courses/${course.slug}`}
-            className="rounded-full bg-slate-950 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+            className="rounded-full bg-slate-950 px-5 py-2 text-center text-sm font-medium text-white transition hover:bg-slate-800"
           >
             {settings.global.courseCardCtaLabel}
           </Link>
