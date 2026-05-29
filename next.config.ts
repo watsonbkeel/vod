@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
         hostname: "edu-vod-1251741609.cos.ap-guangzhou.myqcloud.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "watsontest-1251741609.cos.ap-guangzhou.myqcloud.com",
+        pathname: "/**",
+      },
     ],
   },
 };
